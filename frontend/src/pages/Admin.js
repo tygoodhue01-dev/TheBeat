@@ -13,13 +13,14 @@ import {
   getJobApplicationsApi, updateJobApplicationStatusApi, deleteJobApplicationApi, sendEmailToApplicantApi,
   getRolesApi, getPermissionsApi, createRoleApi, updateRoleApi, deleteRoleApi,
   getPushTokensApi, sendPushNotificationApi, getPushHistoryApi,
-  getStreamConfigApi, updateStreamConfigApi, getFavoriteStatsApi
+  getStreamConfigApi, updateStreamConfigApi, getFavoriteStatsApi,
+  getAnalyticsOverviewApi, getUserAnalyticsApi, getTopRatedSongsApi, getMostPlayedSongsApi, getTrendingSongsApi
 } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import {
   LayoutGrid, Radio, Music, Users, FileText, Newspaper, MessageSquare, Calendar,
   Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
-  Mic, BarChart3, Heart
+  Mic, BarChart3, Heart, TrendingUp, Activity
 } from 'lucide-react';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -58,6 +59,12 @@ export default function Admin() {
   const [pushTokens, setPushTokens] = useState({ total: 0 });
   const [pushHistory, setPushHistory] = useState([]);
   const [favoriteStats, setFavoriteStats] = useState({ top_songs: [], total_favorites: 0, unique_users: 0, favorites_last_24h: 0 });
+  const [analyticsOverview, setAnalyticsOverview] = useState({});
+  const [userAnalytics, setUserAnalytics] = useState({ daily_signups: {} });
+  const [topRatedSongs, setTopRatedSongs] = useState([]);
+  const [mostPlayedSongs, setMostPlayedSongs] = useState([]);
+  const [trendingSongs, setTrendingSongs] = useState([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Forms
@@ -124,7 +131,22 @@ export default function Admin() {
       });
     }
     if (tab === 'analytics') {
-      getFavoriteStatsApi().then(setFavoriteStats).catch(() => {});
+      setAnalyticsLoading(true);
+      Promise.all([
+        getFavoriteStatsApi().catch(() => ({ top_songs: [], total_favorites: 0, unique_users: 0, favorites_last_24h: 0 })),
+        getAnalyticsOverviewApi().catch(() => ({})),
+        getUserAnalyticsApi().catch(() => ({ daily_signups: {} })),
+        getTopRatedSongsApi(8).catch(() => []),
+        getMostPlayedSongsApi(8).catch(() => []),
+        getTrendingSongsApi(8).catch(() => [])
+      ]).then(([fav, overview, usersData, rated, played, trending]) => {
+        setFavoriteStats(fav);
+        setAnalyticsOverview(overview);
+        setUserAnalytics(usersData);
+        setTopRatedSongs(rated);
+        setMostPlayedSongs(played);
+        setTrendingSongs(trending);
+      }).finally(() => setAnalyticsLoading(false));
     }
   }, [tab]);
 
@@ -245,8 +267,30 @@ export default function Admin() {
 
   const renderAnalytics = () => (
     <div data-testid="admin-analytics">
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Favorites Analytics</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Track listener favorite-song activity.</p>
+      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Analytics</h2>
+      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Audience growth, engagement, and song trends.</p>
+      {analyticsLoading ? (
+        <div className="text-[#71717a] py-8">Loading analytics...</div>
+      ) : null}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{analyticsOverview.total_users || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">Total Users</p>
+        </div>
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{analyticsOverview.new_users_7d || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">New Users (7d)</p>
+        </div>
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{analyticsOverview.total_requests || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">Total Requests</p>
+        </div>
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{analyticsOverview.songs_played_today || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">Songs Played Today</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
           <p className="text-3xl font-black text-white">{favoriteStats.total_favorites || 0}</p>
@@ -261,7 +305,43 @@ export default function Admin() {
           <p className="text-xs text-[#71717a] mt-1 font-medium">Last 24 Hours</p>
         </div>
       </div>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2"><Users size={14} className="text-[#00F0FF]" /> Signups (Last 7 Days)</h3>
+          </div>
+          <div className="p-4 space-y-2">
+            {Object.keys(userAnalytics.daily_signups || {}).sort().slice(-7).map((date) => (
+              <div key={date} className="flex items-center justify-between text-xs">
+                <span className="text-[#a1a1aa]">{date}</span>
+                <span className="text-white font-bold">{userAnalytics.daily_signups[date]}</span>
+              </div>
+            ))}
+            {Object.keys(userAnalytics.daily_signups || {}).length === 0 ? (
+              <p className="text-[#71717a] text-xs">No signup trend data yet.</p>
+            ) : null}
+          </div>
+        </div>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2"><Activity size={14} className="text-[#FFF000]" /> Top Favorites Snapshot</h3>
+          </div>
+          <div className="p-4 space-y-2">
+            {(analyticsOverview.top_favorites || []).slice(0, 6).map((item, i) => (
+              <div key={`${item.song}-${i}`} className="flex items-center justify-between text-xs gap-2">
+                <span className="text-[#a1a1aa] truncate">{item.song}</span>
+                <span className="text-[#FFF000] font-bold">{item.count}</span>
+              </div>
+            ))}
+            {(analyticsOverview.top_favorites || []).length === 0 ? (
+              <p className="text-[#71717a] text-xs">No top favorite songs yet.</p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden mb-4">
         <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
           <h3 className="text-sm font-bold text-white flex items-center gap-2"><Heart size={14} className="text-[#FF007F]" /> Top Favorited Songs</h3>
         </div>
@@ -280,6 +360,51 @@ export default function Admin() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+            <h3 className="text-sm font-bold text-white">Top Rated Songs</h3>
+          </div>
+          <div className="p-3 space-y-2">
+            {topRatedSongs.slice(0, 6).map((song, i) => (
+              <div key={`${song.song_id}-${i}`} className="text-xs">
+                <p className="text-white truncate">{song.song_title}</p>
+                <p className="text-[#71717a]">Rating {song.average_rating} ({song.rating_count})</p>
+              </div>
+            ))}
+            {topRatedSongs.length === 0 ? <p className="text-[#71717a] text-xs">No ratings data.</p> : null}
+          </div>
+        </div>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+            <h3 className="text-sm font-bold text-white">Most Played</h3>
+          </div>
+          <div className="p-3 space-y-2">
+            {mostPlayedSongs.slice(0, 6).map((song, i) => (
+              <div key={`${song.song_title}-${song.artist}-${i}`} className="text-xs">
+                <p className="text-white truncate">{song.song_title}</p>
+                <p className="text-[#71717a]">{song.play_count} plays</p>
+              </div>
+            ))}
+            {mostPlayedSongs.length === 0 ? <p className="text-[#71717a] text-xs">No play count data.</p> : null}
+          </div>
+        </div>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2"><TrendingUp size={13} className="text-[#00F0FF]" /> Trending</h3>
+          </div>
+          <div className="p-3 space-y-2">
+            {trendingSongs.slice(0, 6).map((song, i) => (
+              <div key={`${song.song_title}-${song.artist}-${i}`} className="text-xs">
+                <p className="text-white truncate">{song.song_title}</p>
+                <p className="text-[#71717a]">{song.play_count} this week</p>
+              </div>
+            ))}
+            {trendingSongs.length === 0 ? <p className="text-[#71717a] text-xs">No trending data.</p> : null}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -406,6 +406,33 @@ export async function getFavoriteStatsApi() {
   if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
   return data;
 }
+export async function getAnalyticsOverviewApi() {
+  const res = await authFetch(`${API_BASE}/analytics/overview`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
+  return data;
+}
+export async function getUserAnalyticsApi() {
+  const res = await authFetch(`${API_BASE}/analytics/users`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
+  return data;
+}
+export async function getTopRatedSongsApi(limit = 10) {
+  const res = await fetch(`${API_BASE}/charts/top-rated?limit=${limit}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+export async function getMostPlayedSongsApi(limit = 10) {
+  const res = await fetch(`${API_BASE}/charts/most-played?limit=${limit}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+export async function getTrendingSongsApi(limit = 10) {
+  const res = await fetch(`${API_BASE}/charts/trending?limit=${limit}`);
+  if (!res.ok) return [];
+  return res.json();
+}
 
 // Job Applications
 export async function submitJobApplicationApi(data) {

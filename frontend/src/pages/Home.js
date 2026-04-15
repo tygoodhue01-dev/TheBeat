@@ -263,10 +263,6 @@ export default function Home() {
                 className="flex items-center gap-2 bg-transparent border border-[rgba(0,240,255,0.3)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(0,240,255,0.1)] transition-colors">
                 <Share2 size={14} /> SHARE
               </button>
-              <Link to="/requests" data-testid="hero-request-btn"
-                className="flex items-center gap-2 bg-transparent border border-[rgba(255,0,127,0.4)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#FF007F] tracking-[1px] hover:bg-[rgba(255,0,127,0.1)] transition-colors">
-                <Music size={14} /> REQUEST A SONG
-              </Link>
               <Link to="/recently-played" data-testid="hero-recently-played"
                 className="flex items-center gap-2 bg-[rgba(255,255,255,0.05)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(255,255,255,0.1)] transition-colors">
                 <Clock size={14} /> Recently Played
