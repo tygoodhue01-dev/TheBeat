@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, NavLink } from 'react-router-dom';
+import { MAIN_NAV_LINKS, MORE_SITE_LINKS } from '../config/navLinks';
 import {
   getAdminStatsApi, getAdminUsersApi, getAdminRequestsApi, updateUserApi, deleteUserApi,
   updateRequestStatusApi, deleteRequestApi, createNewsApi, getNewsApi, updateNewsApi, deleteNewsApi,
@@ -18,7 +19,8 @@ import {
 import WebNavBar from '../components/Navbar';
 import {
   LayoutGrid, Radio, Music, Users, FileText, Newspaper, MessageSquare, Calendar,
-  Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail
+  Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
+  ExternalLink
 } from 'lucide-react';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -712,8 +714,49 @@ export default function Admin() {
             </button>
           ))}
           <div className="h-px bg-[rgba(255,255,255,0.1)] my-4" />
+          <div className="px-2 mb-2">
+            <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">VIEW SITE</span>
+          </div>
+          <div className="space-y-0.5 mb-3">
+            {MAIN_NAV_LINKS.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.to === '/'}
+                data-testid={`admin-site-nav-${l.label.toLowerCase().replace(/\s/g, '-')}`}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-bold tracking-[1px] transition-colors ${
+                    isActive ? 'bg-white/[0.06] text-white' : 'text-[#71717a] hover:text-white hover:bg-white/[0.03]'
+                  }`
+                }
+              >
+                <ExternalLink size={12} className="opacity-60 shrink-0" />
+                {l.label}
+              </NavLink>
+            ))}
+          </div>
+          <div className="px-2 mb-2">
+            <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">MORE</span>
+          </div>
+          <div className="space-y-0.5 mb-4">
+            {MORE_SITE_LINKS.map((l) => (
+              <NavLink
+                key={l.to + l.label}
+                to={l.to}
+                data-testid={`admin-site-more-${l.label.toLowerCase().replace(/\s/g, '-')}`}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-bold tracking-[1px] transition-colors ${
+                    isActive ? 'bg-white/[0.06] text-white' : 'text-[#71717a] hover:text-white hover:bg-white/[0.03]'
+                  }`
+                }
+              >
+                <ExternalLink size={12} className="opacity-60 shrink-0" />
+                {l.label}
+              </NavLink>
+            ))}
+          </div>
           <Link to="/" className="flex items-center gap-3 px-3 py-3 text-[#71717a] hover:text-white transition-colors">
-            <ChevronLeft size={16} /><span className="text-sm">Back to Site</span>
+            <ChevronLeft size={16} /><span className="text-sm">Back to Home</span>
           </Link>
         </div>
 

@@ -1,8 +1,11 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, BackgroundTasks, UploadFile, File
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
+import pathlib
+import shutil
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -322,6 +325,10 @@ class PushNotificationSend(BaseModel):
 
 # App setup
 app = FastAPI()
+_upload_root = pathlib.Path(__file__).resolve().parent / "uploads"
+_upload_root.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_upload_root)), name="uploads")
+
 api_router = APIRouter(prefix="/api")
 
 # ==================== AUTH ENDPOINTS ====================
@@ -542,6 +549,43 @@ async def update_my_profile(req: ProfileUpdate, user: dict = Depends(get_current
     
     updated = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
     return updated
+
+
+def _public_base_url(request: Request) -> str:
+    return os.environ.get("BACKEND_PUBLIC_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
+
+
+AVATAR_UPLOAD_DIR = pathlib.Path(__file__).resolve().parent / "uploads" / "avatars"
+ALLOWED_AVATAR_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}
+
+
+@api_router.post("/users/me/avatar")
+async def upload_my_avatar(request: Request, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload a profile photo; stores file and sets avatar_url on the user."""
+    content_type = (file.content_type or "").split(";")[0].strip().lower()
+    if content_type not in ALLOWED_AVATAR_TYPES:
+        raise HTTPException(status_code=400, detail="Image must be JPEG, PNG, WebP, or GIF")
+
+    AVATAR_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    ext = ALLOWED_AVATAR_TYPES[content_type]
+    filename = f"{user['user_id']}_{uuid.uuid4().hex[:10]}{ext}"
+    dest = AVATAR_UPLOAD_DIR / filename
+
+    try:
+        with dest.open("wb") as out:
+            shutil.copyfileobj(file.file, out)
+    finally:
+        await file.close()
+
+    public_path = f"/uploads/avatars/{filename}"
+    avatar_url = f"{_public_base_url(request)}{public_path}"
+
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"avatar_url": avatar_url, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    updated = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    return {"avatar_url": updated.get("avatar_url"), "user": updated}
 
 @api_router.get("/users/me/stats")
 async def get_my_stats(user: dict = Depends(get_current_user)):

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getRewardsApi, getMyPointsApi, getMyHistoryApi, getLeaderboardApi, dailyCheckInApi, redeemRewardApi } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -10,7 +10,11 @@ const ICONS = { megaphone: Zap, flash: Zap, star: Star, 'shield-checkmark': Chec
 
 export default function Rewards() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('rewards');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [tab, setTab] = useState(
+    ['rewards', 'leaderboard', 'history'].includes(tabFromUrl) ? tabFromUrl : 'rewards'
+  );
   const [rewards, setRewards] = useState([]);
   const [points, setPoints] = useState({ points: 0, lifetime_points: 0 });
   const [history, setHistory] = useState([]);
@@ -18,9 +22,19 @@ export default function Rewards() {
   const [checkingIn, setCheckingIn] = useState(false);
 
   useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t && ['rewards', 'leaderboard', 'history'].includes(t)) setTab(t);
+  }, [searchParams]);
+
+  useEffect(() => {
     Promise.all([getRewardsApi(), getLeaderboardApi()]).then(([r, lb]) => { setRewards(r); setLeaders(lb); });
     if (user) { Promise.all([getMyPointsApi(), getMyHistoryApi()]).then(([p, h]) => { setPoints(p); setHistory(h); }); }
   }, [user]);
+
+  const changeTab = (t) => {
+    setTab(t);
+    setSearchParams(t === 'rewards' ? {} : { tab: t });
+  };
 
   const reload = () => {
     getMyPointsApi().then(setPoints);
@@ -79,7 +93,7 @@ export default function Rewards() {
         {/* Tabs */}
         <div className="flex bg-[#18181b] rounded-full p-1 mb-6" data-testid="rewards-tabs">
           {['rewards', 'leaderboard', 'history'].map(t => (
-            <button key={t} onClick={() => setTab(t)}
+            <button key={t} onClick={() => changeTab(t)}
               className={`flex-1 py-2.5 rounded-full text-xs font-bold tracking-[1px] text-center transition-all
                 ${tab === t ? 'bg-[#FF007F] text-white' : 'text-[#71717a] hover:text-white'}`}>
               {t.toUpperCase()}

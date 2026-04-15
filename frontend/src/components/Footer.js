@@ -30,9 +30,9 @@ export default function Footer() {
         <div className="flex-1">
           <div className="text-[11px] font-extrabold text-[#FFF000] tracking-[2px] mb-3">CONNECT</div>
           <div className="space-y-2">
-            <Link to="/contact" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Contact Us</Link>
-            <Link to="/contact" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Advertise</Link>
-            <Link to="/careers" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Careers</Link>
+            <Link to="/station#contact" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Contact Us</Link>
+            <Link to="/station#contact" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Advertise</Link>
+            <Link to="/station#careers" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Careers</Link>
             <Link to="/" className="block text-[13px] text-[#a1a1aa] hover:text-white transition-colors">Contest Rules</Link>
           </div>
         </div>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { updateProfileApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi } from '../services/api';
-import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, User, Mic2, Headphones } from 'lucide-react';
+import { updateProfileApi, uploadAvatarApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi, mediaUrl } from '../services/api';
+import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, Mic2, Headphones, Camera } from 'lucide-react';
 
 export default function ProfileDrawer({ open, onClose }) {
   const { user, logout, refresh } = useAuth();
@@ -13,6 +13,8 @@ export default function ProfileDrawer({ open, onClose }) {
   const [stats, setStats] = useState({});
   const [points, setPoints] = useState({ points: 0 });
   const [favorites, setFavorites] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
 
   useEffect(() => {
     if (open && user) {
@@ -50,6 +52,22 @@ export default function ProfileDrawer({ open, onClose }) {
     } catch (e) { alert(e.message); }
   };
 
+  const onPickAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    setUploading(true);
+    try {
+      await uploadAvatarApi(file);
+      await refresh();
+    } catch (err) {
+      alert(err.message || 'Upload failed');
+    }
+    setUploading(false);
+  };
+
+  const avatarSrc = user.avatar_url ? mediaUrl(user.avatar_url) : null;
+
   const handleLogout = () => {
     logout();
     onClose();
@@ -75,8 +93,25 @@ export default function ProfileDrawer({ open, onClose }) {
         <div className="p-6">
           {/* Avatar + Info */}
           <div className="flex items-center gap-4 mb-5">
-            <div className="w-16 h-16 rounded-full bg-[#27272a] flex items-center justify-center border-[3px]" style={{ borderColor: badge.color }}>
-              <span className="text-2xl font-black text-white">{user.name?.charAt(0)?.toUpperCase()}</span>
+            <div className="relative shrink-0">
+              <div className="w-16 h-16 rounded-full bg-[#27272a] flex items-center justify-center border-[3px] overflow-hidden" style={{ borderColor: badge.color }}>
+                {avatarSrc ? (
+                  <img src={avatarSrc} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-black text-white">{user.name?.charAt(0)?.toUpperCase()}</span>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={onPickAvatar} data-testid="profile-avatar-input" />
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#FF007F] flex items-center justify-center border-2 border-[#0d0d0f] hover:opacity-90 disabled:opacity-50"
+                title="Upload profile photo"
+                data-testid="profile-avatar-upload-btn"
+              >
+                <Camera size={12} className="text-white" />
+              </button>
             </div>
             <div className="flex-1">
               {editing ? (

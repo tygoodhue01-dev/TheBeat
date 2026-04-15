@@ -592,3 +592,6 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# User-uploaded media (avatars, etc.)
+backend/uploads/

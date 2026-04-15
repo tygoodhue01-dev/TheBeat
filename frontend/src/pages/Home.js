@@ -5,7 +5,7 @@ import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import {
   getNowPlayingApi, getNewsApi, getEventsApi,
-  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi
+  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, mediaUrl
 } from '../services/api';
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones } from 'lucide-react';
 
@@ -139,7 +139,7 @@ export default function Home() {
             {djs.map(d => (
               <div key={d.user_id} className="w-[23%] min-w-[200px] bg-[#18181b] rounded-lg p-5 flex flex-col items-center border border-[rgba(255,255,255,0.1)]" data-testid={`dj-card-${d.user_id}`}>
                 {d.avatar_url ? (
-                  <img src={d.avatar_url} alt={d.name} className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]" />
+                  <img src={mediaUrl(d.avatar_url)} alt={d.name} className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]" />
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-[#FF007F] flex items-center justify-center mb-3">
                     <span className="text-[28px] font-black text-white">{d.name?.charAt(0)}</span>

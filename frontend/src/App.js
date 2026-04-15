@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import News from './pages/News';
@@ -11,10 +11,7 @@ import Admin from './pages/Admin';
 import Schedule from './pages/Schedule';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import About from './pages/About';
-import Careers from './pages/Careers';
-import Contact from './pages/Contact';
-import Leaderboard from './pages/Leaderboard';
+import Station from './pages/Station';
 import RecentlyPlayed from './pages/RecentlyPlayed';
 
 export default function App() {
@@ -33,10 +30,11 @@ export default function App() {
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/careers" element={<Careers />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/station" element={<Station />} />
+            <Route path="/about" element={<Navigate to="/station#about" replace />} />
+            <Route path="/careers" element={<Navigate to="/station#careers" replace />} />
+            <Route path="/contact" element={<Navigate to="/station#contact" replace />} />
+            <Route path="/leaderboard" element={<Navigate to="/rewards?tab=leaderboard" replace />} />
             <Route path="/recently-played" element={<RecentlyPlayed />} />
           </Routes>
         </div>

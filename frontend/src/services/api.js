@@ -1,5 +1,14 @@
 const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+/** Full URL for uploaded files or relative paths stored on the API (e.g. /uploads/avatars/...) */
+export function mediaUrl(pathOrUrl) {
+  if (!pathOrUrl) return '';
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) return pathOrUrl;
+  const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+  const p = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+  return `${base}${p}`;
+}
+
 function getToken() {
   return localStorage.getItem('access_token');
 }
@@ -9,7 +18,9 @@ function getRefreshToken() {
 
 async function authFetch(url, options = {}) {
   let token = getToken();
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const headers = { ...(options.headers || {}) };
+  if (!isFormData) headers['Content-Type'] = 'application/json';
   if (token) headers['Authorization'] = `Bearer ${token}`;
   let res = await fetch(url, { ...options, headers });
   if (res.status === 401) {
@@ -351,6 +362,15 @@ export async function updateProfileApi(data) {
   const res = await authFetch(`${API_BASE}/users/me/profile`, { method: 'PUT', body: JSON.stringify(data) });
   if (!res.ok) throw new Error('Failed');
   return res.json();
+}
+
+export async function uploadAvatarApi(file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await authFetch(`${API_BASE}/users/me/avatar`, { method: 'POST', body: form });
+  const data = await res.json();
+  if (!res.ok) throw new Error(fmtErr(data.detail));
+  return data;
 }
 export async function getMyFavoritesApi() {
   const res = await authFetch(`${API_BASE}/users/me/favorites`);
