@@ -1,9 +1,40 @@
-const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
+/**
+ * Backend origin without trailing slash. If unset/invalid, use '' so API_BASE is '/api'
+ * (CRA dev server proxies /api and /uploads — see src/setupProxy.js).
+ */
+const BACKEND_ORIGIN = (() => {
+  const raw = (process.env.REACT_APP_BACKEND_URL || '').trim().replace(/\/$/, '');
+  if (raw && raw !== 'undefined') return raw;
+  return '';
+})();
+
+/** Same-origin '/api' when env is missing; otherwise full URL to the API. */
+export const API_BASE = BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api` : '/api';
+
+async function readJsonResponse(res, fallback) {
+  try {
+    if (!res || !res.ok) return fallback;
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) return fallback;
+    return await res.json();
+  } catch {
+    return fallback;
+  }
+}
+
+async function publicGetJson(path, fallback) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`);
+    return await readJsonResponse(res, fallback);
+  } catch {
+    return fallback;
+  }
+}
 
 /** Full URL for uploaded files or relative paths stored on the API (e.g. /uploads/avatars/...) */
 export function mediaUrl(pathOrUrl, version = '') {
   if (!pathOrUrl) return '';
-  const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+  const base = (BACKEND_ORIGIN || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   const raw = String(pathOrUrl).replace(/\\/g, '/');
   let built = '';
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
@@ -109,14 +140,19 @@ export async function logoutApi() {
 // News
 export async function getNewsApi(category) {
   const q = category ? `?category=${category}` : '';
-  const res = await fetch(`${API_BASE}/news${q}`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson(`/news${q}`, []);
+  return Array.isArray(data) ? data : [];
 }
 export async function getNewsDetailApi(id) {
-  const res = await fetch(`${API_BASE}/news/${id}`);
-  if (!res.ok) throw new Error('Not found');
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/news/${id}`);
+    if (!res.ok) throw new Error('Not found');
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error('Not found');
+    return await res.json();
+  } catch {
+    throw new Error('Not found');
+  }
 }
 export async function createNewsApi(data) {
   const res = await authFetch(`${API_BASE}/news`, { method: 'POST', body: JSON.stringify(data) });
@@ -132,9 +168,8 @@ export async function deleteNewsApi(id) {
 
 // Requests
 export async function getRequestsApi() {
-  const res = await fetch(`${API_BASE}/requests`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/requests', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function createRequestApi(data) {
   const res = await authFetch(`${API_BASE}/requests`, { method: 'POST', body: JSON.stringify(data) });
@@ -161,9 +196,8 @@ export async function deleteRequestApi(id) {
 
 // Chat
 export async function getChatApi() {
-  const res = await fetch(`${API_BASE}/requests/chat`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/requests/chat', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function sendChatApi(message) {
   const res = await authFetch(`${API_BASE}/requests/chat`, { method: 'POST', body: JSON.stringify({ message }) });
@@ -174,9 +208,8 @@ export async function sendChatApi(message) {
 
 // Shows
 export async function getShowsApi() {
-  const res = await fetch(`${API_BASE}/shows`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/shows', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function createShowApi(data) {
   const res = await authFetch(`${API_BASE}/shows`, { method: 'POST', body: JSON.stringify(data) });
@@ -198,10 +231,11 @@ export async function deleteShowApi(showId) {
 }
 
 // Now Playing
+const NOW_PLAYING_DEFAULT = { song_title: 'The Beat 515', artist: 'Live Radio' };
 export async function getNowPlayingApi() {
-  const res = await fetch(`${API_BASE}/now-playing`);
-  if (!res.ok) return { song_title: 'The Beat 515', artist: 'Live Radio' };
-  return res.json();
+  const data = await publicGetJson('/now-playing', NOW_PLAYING_DEFAULT);
+  if (!data || typeof data !== 'object') return { ...NOW_PLAYING_DEFAULT };
+  return { ...NOW_PLAYING_DEFAULT, ...data };
 }
 export async function updateNowPlayingApi(data) {
   const res = await authFetch(`${API_BASE}/now-playing`, { method: 'PUT', body: JSON.stringify(data) });
@@ -210,18 +244,17 @@ export async function updateNowPlayingApi(data) {
 }
 
 // Stream Config
+const STREAM_CONFIG_DEFAULT = {
+  stream_url: '',
+  station_name: 'The Beat 515',
+  tagline: 'Proud. Loud. Local.',
+  maintenance_mode: false,
+  maintenance_message: '',
+};
 export async function getStreamConfigApi() {
-  const res = await fetch(`${API_BASE}/stream-config`);
-  if (!res.ok) {
-    return {
-      stream_url: '',
-      station_name: 'The Beat 515',
-      tagline: 'Proud. Loud. Local.',
-      maintenance_mode: false,
-      maintenance_message: '',
-    };
-  }
-  return res.json();
+  const data = await publicGetJson('/stream-config', { ...STREAM_CONFIG_DEFAULT });
+  if (!data || typeof data !== 'object') return { ...STREAM_CONFIG_DEFAULT };
+  return { ...STREAM_CONFIG_DEFAULT, ...data };
 }
 export async function updateStreamConfigApi(data) {
   const res = await authFetch(`${API_BASE}/stream-config`, { method: 'PUT', body: JSON.stringify(data) });
@@ -253,9 +286,8 @@ export async function deleteUserApi(id) {
 
 // Rewards
 export async function getRewardsApi() {
-  const res = await fetch(`${API_BASE}/rewards`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/rewards', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function getMyPointsApi() {
   const res = await authFetch(`${API_BASE}/rewards/my-points`);
@@ -268,9 +300,8 @@ export async function getMyHistoryApi() {
   return res.json();
 }
 export async function getLeaderboardApi() {
-  const res = await fetch(`${API_BASE}/rewards/leaderboard`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/rewards/leaderboard', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function dailyCheckInApi() {
   const res = await authFetch(`${API_BASE}/rewards/check-in`, { method: 'POST' });
@@ -287,9 +318,8 @@ export async function redeemRewardApi(rewardId) {
 
 // Events, Contests, Podcasts
 export async function getEventsApi() {
-  const res = await fetch(`${API_BASE}/events`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/events', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function createEventApi(data) {
   const res = await authFetch(`${API_BASE}/events`, { method: 'POST', body: JSON.stringify(data) });
@@ -311,9 +341,8 @@ export async function deleteEventApi(eventId) {
 }
 export async function getContestsApi(includeInactive = false) {
   const q = includeInactive ? '?include_inactive=true' : '';
-  const res = await fetch(`${API_BASE}/contests${q}`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson(`/contests${q}`, []);
+  return Array.isArray(data) ? data : [];
 }
 export async function createContestApi(data) {
   const res = await authFetch(`${API_BASE}/contests`, { method: 'POST', body: JSON.stringify(data) });
@@ -334,9 +363,8 @@ export async function deleteContestApi(contestId) {
   return r;
 }
 export async function getPodcastsApi() {
-  const res = await fetch(`${API_BASE}/podcasts`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/podcasts', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function createPodcastApi(data) {
   const res = await authFetch(`${API_BASE}/podcasts`, { method: 'POST', body: JSON.stringify(data) });
@@ -359,16 +387,14 @@ export async function deletePodcastApi(podcastId) {
 
 // Recently Played
 export async function getRecentlyPlayedApi(limit = 50) {
-  const res = await fetch(`${API_BASE}/recently-played?limit=${limit}`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson(`/recently-played?limit=${limit}`, []);
+  return Array.isArray(data) ? data : [];
 }
 
 // Schedule
 export async function getScheduleApi() {
-  const res = await fetch(`${API_BASE}/schedule`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/schedule', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function createScheduleSlotApi(data) {
   const res = await authFetch(`${API_BASE}/admin/schedule`, { method: 'POST', body: JSON.stringify(data) });
@@ -444,19 +470,16 @@ export async function getUserAnalyticsApi() {
   return data;
 }
 export async function getTopRatedSongsApi(limit = 10) {
-  const res = await fetch(`${API_BASE}/charts/top-rated?limit=${limit}`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson(`/charts/top-rated?limit=${limit}`, []);
+  return Array.isArray(data) ? data : [];
 }
 export async function getMostPlayedSongsApi(limit = 10) {
-  const res = await fetch(`${API_BASE}/charts/most-played?limit=${limit}`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson(`/charts/most-played?limit=${limit}`, []);
+  return Array.isArray(data) ? data : [];
 }
 export async function getTrendingSongsApi(limit = 10) {
-  const res = await fetch(`${API_BASE}/charts/trending?limit=${limit}`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson(`/charts/trending?limit=${limit}`, []);
+  return Array.isArray(data) ? data : [];
 }
 
 // Job Applications
@@ -480,9 +503,8 @@ export async function updateJobApplicationStatusApi(id, status) {
 
 // Polls
 export async function getPollsApi() {
-  const res = await fetch(`${API_BASE}/polls`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/polls', []);
+  return Array.isArray(data) ? data : [];
 }
 export async function votePollApi(pollId, optionIndex) {
   const res = await authFetch(`${API_BASE}/polls/${pollId}/vote`, { method: 'POST', body: JSON.stringify({ option_index: optionIndex }) });
@@ -574,9 +596,8 @@ export async function deleteJobApplicationApi(appId) {
 
 // DJs
 export async function getDjsApi() {
-  const res = await fetch(`${API_BASE}/djs`);
-  if (!res.ok) return [];
-  return res.json();
+  const data = await publicGetJson('/djs', []);
+  return Array.isArray(data) ? data : [];
 }
 
 // Newsletter
