@@ -41,10 +41,22 @@ export default function Footer() {
         <div className="flex-1">
           <div className="text-[11px] font-extrabold text-[#FFF000] tracking-[2px] mb-3">FOLLOW US</div>
           <div className="flex gap-2.5">
-            {[Instagram, Twitter, Facebook].map((Icon, i) => (
-              <div key={i} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer">
+            {[
+              { Icon: Instagram, href: 'https://www.instagram.com/TheBeat515/', label: 'Instagram' },
+              { Icon: Twitter, href: 'https://x.com/TheBeat515', label: 'X (Twitter)' },
+              { Icon: Facebook, href: 'https://www.facebook.com/TheBeat515/', label: 'Facebook' },
+            ].map(({ Icon, href, label }) => (
+              <a
+                key={href}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+              >
                 <Icon size={16} className="text-white" />
-              </div>
+              </a>
             ))}
           </div>
         </div>

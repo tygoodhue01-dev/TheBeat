@@ -5,7 +5,6 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Backgro
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 import pathlib
-import shutil
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -15,6 +14,7 @@ import jwt
 import secrets
 import urllib.request
 import asyncio
+import base64
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
@@ -598,6 +598,7 @@ async def update_my_profile(req: ProfileUpdate, user: dict = Depends(get_current
     primary_role, roles = normalize_roles(updated.get("role"), updated.get("roles"))
     updated["role"] = primary_role
     updated["roles"] = roles
+    updated["avatar_url"] = normalize_avatar_url(updated.get("avatar_url"))
     return updated
 
 
@@ -622,16 +623,27 @@ async def upload_my_avatar(request: Request, file: UploadFile = File(...), user:
     dest = AVATAR_UPLOAD_DIR / filename
 
     try:
+        content = await file.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded image is empty")
+        max_size = 5 * 1024 * 1024
+        if len(content) > max_size:
+            raise HTTPException(status_code=400, detail="Image must be 5MB or smaller")
         with dest.open("wb") as out:
-            shutil.copyfileobj(file.file, out)
+            out.write(content)
     finally:
         await file.close()
 
     public_path = f"/uploads/avatars/{filename}"
+    avatar_data_url = f"data:{content_type};base64,{base64.b64encode(content).decode('ascii')}"
 
     await db.users.update_one(
         {"user_id": user["user_id"]},
-        {"$set": {"avatar_url": public_path, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {
+            "avatar_url": public_path,
+            "avatar_data_url": avatar_data_url,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
     )
     updated = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
     primary_role, roles = normalize_roles(updated.get("role"), updated.get("roles"))
@@ -981,6 +993,7 @@ async def update_user(user_id: str, req: UserUpdate, admin: dict = Depends(requi
     primary_role, roles = normalize_roles(updated_user.get("role"), updated_user.get("roles"))
     updated_user["role"] = primary_role
     updated_user["roles"] = roles
+    updated_user["avatar_url"] = normalize_avatar_url(updated_user.get("avatar_url"))
     return updated_user
 
 @api_router.delete("/admin/users/{user_id}")
@@ -2152,6 +2165,39 @@ async def startup():
             {"user_id": legacy_user["user_id"]},
             {"$set": {"role": primary_role, "roles": roles}}
         )
+
+    # Backfill avatar data-url fallback for existing uploaded avatars.
+    async for u in db.users.find(
+        {
+            "avatar_url": {"$exists": True, "$ne": ""},
+            "$or": [{"avatar_data_url": {"$exists": False}}, {"avatar_data_url": ""}]
+        },
+        {"_id": 0, "user_id": 1, "avatar_url": 1}
+    ):
+        normalized_avatar = normalize_avatar_url(u.get("avatar_url"))
+        if not normalized_avatar.startswith("/uploads/avatars/"):
+            continue
+        local_rel = normalized_avatar[len("/uploads/"):]
+        local_path = _upload_root / local_rel
+        if not local_path.exists() or not local_path.is_file():
+            continue
+        try:
+            content = local_path.read_bytes()
+            suffix = local_path.suffix.lower()
+            content_type = {
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".webp": "image/webp",
+                ".gif": "image/gif",
+            }.get(suffix, "image/jpeg")
+            avatar_data_url = f"data:{content_type};base64,{base64.b64encode(content).decode('ascii')}"
+            await db.users.update_one(
+                {"user_id": u["user_id"]},
+                {"$set": {"avatar_data_url": avatar_data_url}}
+            )
+        except Exception:
+            continue
     
     # Seed sample DJ
     dj_email = "dj@thebeat515.com"

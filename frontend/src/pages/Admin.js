@@ -921,9 +921,9 @@ export default function Admin() {
             <span className="text-base font-extrabold text-white tracking-[1px]">Dashboard</span>
           </div>
           {sidebarGroups.map((group, gi) => (
-            <div key={group.label ?? `group-${gi}`} className={gi > 0 ? 'mt-5' : ''}>
+            <div key={group.label ?? `group-${gi}`} className={gi > 0 ? 'mt-1.5 lg:mt-5' : ''}>
               {group.label && (
-                <div className="px-2 mb-2">
+                <div className="hidden lg:block px-2 mb-2">
                   <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">{group.label}</span>
                 </div>
               )}

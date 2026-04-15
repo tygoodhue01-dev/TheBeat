@@ -12,10 +12,12 @@ export default function WebNavBar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
+  const [avatarFallbackData, setAvatarFallbackData] = useState(false);
 
   useEffect(() => {
     setAvatarBroken(false);
-  }, [user?.avatar_url, user?.updated_at]);
+    setAvatarFallbackData(false);
+  }, [user?.avatar_url, user?.avatar_data_url, user?.updated_at]);
 
   const links = MAIN_NAV_LINKS;
 
@@ -60,10 +62,16 @@ export default function WebNavBar() {
               <button onClick={() => setProfileOpen(true)} data-testid="nav-profile" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                 {user.avatar_url && !avatarBroken ? (
                   <img
-                    src={mediaUrl(user.avatar_url, user.updated_at || user.user_id)}
+                    src={avatarFallbackData && user.avatar_data_url ? user.avatar_data_url : mediaUrl(user.avatar_url, user.updated_at || user.user_id)}
                     alt=""
                     className="w-8 h-8 rounded-full object-cover border border-[rgba(255,255,255,0.15)]"
-                    onError={() => setAvatarBroken(true)}
+                    onError={() => {
+                      if (!avatarFallbackData && user.avatar_data_url) {
+                        setAvatarFallbackData(true);
+                        return;
+                      }
+                      setAvatarBroken(true);
+                    }}
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-[#FF007F] flex items-center justify-center">

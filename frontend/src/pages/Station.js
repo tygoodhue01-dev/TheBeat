@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Radio, Mic2, Users, Heart, Briefcase, Send, CheckCircle, Phone, Mail, MapPin } from 'lucide-react';
+import { Radio, Mic2, Users, Heart, Briefcase, Send, CheckCircle, Phone, Mail, MapPin, Instagram, Twitter, Facebook } from 'lucide-react';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { submitJobApplicationApi } from '../services/api';
@@ -188,6 +188,37 @@ export default function Station() {
                 </p>
               </div>
             ))}
+            <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] sm:col-span-2">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  <Users size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Social</h3>
+                  <p className="text-xs text-[#a1a1aa]">Follow The Beat 515 online</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {[
+                  { Icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/TheBeat515/' },
+                  { Icon: Twitter, label: 'X / Twitter', href: 'https://x.com/TheBeat515' },
+                  { Icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/TheBeat515/' },
+                ].map(({ Icon, label, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-[rgba(255,255,255,0.12)] px-3 py-1.5 hover:bg-white/10 transition-colors"
+                    aria-label={label}
+                    title={label}
+                  >
+                    <Icon size={14} className="text-white" />
+                    <span className="text-xs text-[#a1a1aa]">{label}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       </div>
