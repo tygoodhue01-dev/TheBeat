@@ -24,6 +24,19 @@ import {
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const CATS = ['general','music','events','local','contests'];
+const ROLE_OPTIONS = ['listener', 'editor', 'dj', 'admin'];
+
+function getUserRoles(user) {
+  if (!user) return [];
+  if (Array.isArray(user.roles) && user.roles.length) return user.roles;
+  if (user.role) return [user.role];
+  return [];
+}
+
+function hasAnyRole(user, roles) {
+  const assigned = getUserRoles(user);
+  return roles.some((r) => assigned.includes(r));
+}
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
@@ -94,7 +107,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !['admin','dj','editor'].includes(user.role)) { navigate('/'); return; }
+    if (!user || !hasAnyRole(user, ['admin', 'dj', 'editor'])) { navigate('/'); return; }
     loadData();
   }, [user, authLoading, navigate, loadData]);
 
@@ -139,11 +152,11 @@ export default function Admin() {
       { key: 'push', label: 'Push notifications', icon: Bell, roles: ['admin'] },
     ]},
   ]
-    .map(g => ({ ...g, items: g.items.filter(i => i.roles.includes(user?.role)) }))
+    .map(g => ({ ...g, items: g.items.filter(i => hasAnyRole(user, i.roles)) }))
     .filter(g => g.items.length > 0);
 
   if (authLoading || loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-[#71717a]">Loading...</div>;
-  if (!user || !['admin','dj','editor'].includes(user.role)) return null;
+  if (!user || !hasAnyRole(user, ['admin', 'dj', 'editor'])) return null;
 
   // ===== Modal overlay helper =====
   const Modal = ({ show, onClose, title, children }) => {
@@ -278,10 +291,16 @@ export default function Admin() {
               <tr key={u.user_id} className="border-b border-white/[0.04]" data-testid={`user-row-${u.user_id}`}>
                 <td className="px-4 py-3 text-white font-medium">{u.name}</td>
                 <td className="px-4 py-3 text-[#a1a1aa]">{u.email}</td>
-                <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2.5 py-1 rounded-full border ${u.role==='admin'?'border-[#FFF000]/30 text-[#FFF000]':u.role==='dj'?'border-[#FF007F]/30 text-[#FF007F]':u.role==='editor'?'border-[#00F0FF]/30 text-[#00F0FF]':'border-[#71717a]/30 text-[#71717a]'}`}>{u.role?.toUpperCase()}</span></td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {getUserRoles(u).map((roleName) => (
+                      <span key={`${u.user_id}-${roleName}`} className={`text-[10px] font-extrabold tracking-[1px] px-2.5 py-1 rounded-full border ${roleName==='admin'?'border-[#FFF000]/30 text-[#FFF000]':roleName==='dj'?'border-[#FF007F]/30 text-[#FF007F]':roleName==='editor'?'border-[#00F0FF]/30 text-[#00F0FF]':'border-[#71717a]/30 text-[#71717a]'}`}>{roleName?.toUpperCase()}</span>
+                    ))}
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-[#71717a] text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditUser({...u})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                  <button onClick={() => setEditUser({...u, roles: getUserRoles(u)})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
                   {u.user_id !== user.user_id && <button onClick={() => { if (window.confirm(`Delete ${u.name}?`)) deleteUserApi(u.user_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Remove</button>}
                 </td>
               </tr>
@@ -768,12 +787,42 @@ export default function Admin() {
           <Input value={editUser.name||''} onChange={e => setEditUser({...editUser, name:e.target.value})} />
           <Label>EMAIL</Label>
           <Input value={editUser.email||''} onChange={e => setEditUser({...editUser, email:e.target.value})} />
-          <Label>ROLE</Label>
-          <div className="flex gap-2 mt-1">{['listener','editor','dj','admin'].map(r => (
-            <button key={r} onClick={() => setEditUser({...editUser, role:r})} className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${editUser.role===r?'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]':'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}>{r.toUpperCase()}</button>
-          ))}</div>
+          <Label>ROLES</Label>
+          <div className="flex gap-2 mt-1 flex-wrap">
+            {ROLE_OPTIONS.map(r => {
+              const selected = (editUser.roles || []).includes(r);
+              return (
+                <button
+                  key={r}
+                  onClick={() => {
+                    const current = Array.isArray(editUser.roles) ? [...editUser.roles] : [];
+                    const has = current.includes(r);
+                    const next = has ? current.filter((x) => x !== r) : [...current, r];
+                    setEditUser({ ...editUser, roles: next, role: next[0] || 'listener' });
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${selected?'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]':'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}
+                >
+                  {r.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-[#71717a] mt-2">First selected role is used as primary.</p>
           <div className="flex gap-3 mt-6">
-            <Btn pink className="flex-1" onClick={async () => { try { await updateUserApi(editUser.user_id, {name:editUser.name,email:editUser.email,role:editUser.role}); setEditUser(null); loadData(); alert('Updated!'); } catch(e){alert(e.message);} }}>SAVE</Btn>
+            <Btn pink className="flex-1" onClick={async () => {
+              try {
+                const roles = (editUser.roles || []).length ? editUser.roles : ['listener'];
+                await updateUserApi(editUser.user_id, {
+                  name: editUser.name,
+                  email: editUser.email,
+                  role: roles[0],
+                  roles
+                });
+                setEditUser(null);
+                loadData();
+                alert('Updated!');
+              } catch(e){alert(e.message);}
+            }}>SAVE</Btn>
             <Btn className="flex-1" onClick={() => setEditUser(null)}>CANCEL</Btn>
           </div>
         </>)}

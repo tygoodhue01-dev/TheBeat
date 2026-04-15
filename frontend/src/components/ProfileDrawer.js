@@ -31,6 +31,8 @@ export default function ProfileDrawer({ open, onClose }) {
 
   if (!open || !user) return null;
 
+  const userRoles = Array.isArray(user?.roles) && user.roles.length ? user.roles : [user?.role || 'listener'];
+
   const getRoleBadge = (role) => {
     const badges = {
       admin: { label: 'ADMIN', color: '#FFF000', icon: Shield },
@@ -41,7 +43,7 @@ export default function ProfileDrawer({ open, onClose }) {
     return badges[role] || badges.listener;
   };
 
-  const badge = getRoleBadge(user.role);
+  const badge = getRoleBadge(userRoles[0]);
   const BadgeIcon = badge.icon;
 
   const handleSave = async () => {
@@ -125,6 +127,18 @@ export default function ProfileDrawer({ open, onClose }) {
                 <BadgeIcon size={10} style={{ color: badge.color }} />
                 <span className="text-[10px] font-extrabold tracking-[1px]" style={{ color: badge.color }}>{badge.label}</span>
               </div>
+              {userRoles.length > 1 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {userRoles.slice(1).map((r) => {
+                    const rb = getRoleBadge(r);
+                    return (
+                      <span key={r} className="text-[9px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full border" style={{ borderColor: `${rb.color}40`, color: rb.color }}>
+                        {rb.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {!editing && (
               <button onClick={() => setEditing(true)} className="w-9 h-9 rounded-full bg-[rgba(255,0,127,0.15)] flex items-center justify-center" data-testid="profile-edit-btn">
@@ -196,7 +210,7 @@ export default function ProfileDrawer({ open, onClose }) {
           <div className="mb-5">
             <span className="text-[10px] font-extrabold text-[#a1a1aa] tracking-[2px] mb-2 block">QUICK ACTIONS</span>
 
-            {(user.role === 'admin' || user.role === 'dj' || user.role === 'editor') && (
+            {userRoles.some((r) => ['admin', 'dj', 'editor'].includes(r)) && (
               <Link to="/admin" onClick={onClose} className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,0,127,0.2)] transition-colors">
                 <div className="w-9 h-9 rounded-lg bg-[rgba(255,0,127,0.1)] flex items-center justify-center mr-3"><Shield size={15} className="text-[#FF007F]" /></div>
                 <div><p className="text-sm font-semibold text-white">Dashboard</p><p className="text-[10px] text-[#71717a]">Manage station content</p></div>

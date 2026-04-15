@@ -3,8 +3,19 @@ const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 /** Full URL for uploaded files or relative paths stored on the API (e.g. /uploads/avatars/...) */
 export function mediaUrl(pathOrUrl) {
   if (!pathOrUrl) return '';
-  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) return pathOrUrl;
   const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+    try {
+      const parsed = new URL(pathOrUrl);
+      // If avatar/media points to an old host, keep only known upload paths and rebuild from current backend URL.
+      if (parsed.pathname.startsWith('/uploads/')) {
+        return `${base}${parsed.pathname}`;
+      }
+    } catch (_) {
+      return pathOrUrl;
+    }
+    return pathOrUrl;
+  }
   const p = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
   return `${base}${p}`;
 }

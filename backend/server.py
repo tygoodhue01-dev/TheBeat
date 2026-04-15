@@ -53,6 +53,21 @@ def create_refresh_token(user_id: str) -> str:
     }
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
+def normalize_roles(primary_role: Optional[str], roles_list: Optional[List[str]] = None) -> tuple[str, List[str]]:
+    allowed = {"admin", "dj", "editor", "listener"}
+    cleaned: List[str] = []
+    for r in (roles_list or []):
+        if isinstance(r, str):
+            rv = r.strip().lower()
+            if rv in allowed and rv not in cleaned:
+                cleaned.append(rv)
+    p = (primary_role or "").strip().lower() if isinstance(primary_role, str) else ""
+    if p in allowed and p not in cleaned:
+        cleaned.insert(0, p)
+    if not cleaned:
+        cleaned = ["listener"]
+    return cleaned[0], cleaned
+
 async def get_current_user(request: Request) -> dict:
     auth_header = request.headers.get("Authorization", "")
     token = None
@@ -69,6 +84,9 @@ async def get_current_user(request: Request) -> dict:
         user = await db.users.find_one({"user_id": payload["sub"]}, {"_id": 0})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
+        primary_role, roles = normalize_roles(user.get("role"), user.get("roles"))
+        user["role"] = primary_role
+        user["roles"] = roles
         user.pop("password_hash", None)
         return user
     except jwt.ExpiredSignatureError:
@@ -79,7 +97,10 @@ async def get_current_user(request: Request) -> dict:
 def require_roles(*roles):
     async def checker(request: Request):
         user = await get_current_user(request)
-        if user["role"] not in roles:
+        user_roles = set(user.get("roles") or [])
+        if user.get("role"):
+            user_roles.add(user["role"])
+        if not any(r in user_roles for r in roles):
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return user
     return checker
@@ -128,6 +149,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     role: Optional[str] = None
+    roles: Optional[List[str]] = None
     bio: Optional[str] = None
 
 class NewsCreate(BaseModel):
@@ -349,6 +371,7 @@ async def register(req: RegisterRequest):
         "password_hash": hash_password(req.password),
         "name": req.name.strip(),
         "role": "listener",
+        "roles": ["listener"],
         "bio": "",
         "avatar_url": "",
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -396,9 +419,12 @@ async def login(req: LoginRequest, request: Request):
     # Clear attempts on success
     await db.login_attempts.delete_many({"identifier": identifier})
     
-    access_token = create_access_token(user["user_id"], email, user["role"])
+    primary_role, roles = normalize_roles(user.get("role"), user.get("roles"))
+    access_token = create_access_token(user["user_id"], email, primary_role)
     refresh_token = create_refresh_token(user["user_id"])
     user.pop("password_hash", None)
+    user["role"] = primary_role
+    user["roles"] = roles
     return {"user": user, "access_token": access_token, "refresh_token": refresh_token}
 
 @api_router.get("/auth/me")
@@ -458,6 +484,9 @@ async def update_profile(req: UpdateProfileRequest, user: dict = Depends(get_cur
         await db.users.update_one({"user_id": user["user_id"]}, {"$set": update_data})
     
     updated_user = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    primary_role, roles = normalize_roles(updated_user.get("role"), updated_user.get("roles"))
+    updated_user["role"] = primary_role
+    updated_user["roles"] = roles
     return updated_user
 
 @api_router.get("/users/{user_id}")
@@ -552,6 +581,9 @@ async def update_my_profile(req: ProfileUpdate, user: dict = Depends(get_current
         logger.info(f"Profile update for {user['user_id']}: modified={result.modified_count}, data={update_data}")
     
     updated = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    primary_role, roles = normalize_roles(updated.get("role"), updated.get("roles"))
+    updated["role"] = primary_role
+    updated["roles"] = roles
     return updated
 
 
@@ -582,13 +614,15 @@ async def upload_my_avatar(request: Request, file: UploadFile = File(...), user:
         await file.close()
 
     public_path = f"/uploads/avatars/{filename}"
-    avatar_url = f"{_public_base_url(request)}{public_path}"
 
     await db.users.update_one(
         {"user_id": user["user_id"]},
-        {"$set": {"avatar_url": avatar_url, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"avatar_url": public_path, "updated_at": datetime.now(timezone.utc).isoformat()}},
     )
     updated = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    primary_role, roles = normalize_roles(updated.get("role"), updated.get("roles"))
+    updated["role"] = primary_role
+    updated["roles"] = roles
     return {"avatar_url": updated.get("avatar_url"), "user": updated}
 
 @api_router.get("/users/me/stats")
@@ -911,7 +945,12 @@ async def update_user(user_id: str, req: UserUpdate, admin: dict = Depends(requi
     update_data = {}
     if req.name: update_data["name"] = req.name
     if req.email: update_data["email"] = req.email
-    if req.role: update_data["role"] = req.role
+    if req.role:
+        update_data["role"] = req.role.strip().lower()
+    if req.roles is not None:
+        primary_role, roles = normalize_roles(req.role, req.roles)
+        update_data["role"] = primary_role
+        update_data["roles"] = roles
     if req.bio is not None: update_data["bio"] = req.bio
     
     if not update_data:
@@ -924,6 +963,9 @@ async def update_user(user_id: str, req: UserUpdate, admin: dict = Depends(requi
         raise HTTPException(status_code=404, detail="User not found")
     
     updated_user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    primary_role, roles = normalize_roles(updated_user.get("role"), updated_user.get("roles"))
+    updated_user["role"] = primary_role
+    updated_user["roles"] = roles
     return updated_user
 
 @api_router.delete("/admin/users/{user_id}")
@@ -1178,14 +1220,27 @@ async def update_now_playing(req: NowPlayingUpdate, user: dict = Depends(require
 # ==================== DJ PROFILES ====================
 @api_router.get("/djs")
 async def list_djs():
-    djs = await db.users.find({"role": "dj"}, {"_id": 0, "password_hash": 0}).to_list(50)
+    djs = await db.users.find(
+        {"$or": [{"role": "dj"}, {"roles": "dj"}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(50)
+    for d in djs:
+        primary_role, roles = normalize_roles(d.get("role"), d.get("roles"))
+        d["role"] = primary_role
+        d["roles"] = roles
     return djs
 
 @api_router.get("/djs/{user_id}")
 async def get_dj(user_id: str):
-    dj = await db.users.find_one({"user_id": user_id, "role": "dj"}, {"_id": 0, "password_hash": 0})
+    dj = await db.users.find_one(
+        {"user_id": user_id, "$or": [{"role": "dj"}, {"roles": "dj"}]},
+        {"_id": 0, "password_hash": 0}
+    )
     if not dj:
         raise HTTPException(status_code=404, detail="DJ not found")
+    primary_role, roles = normalize_roles(dj.get("role"), dj.get("roles"))
+    dj["role"] = primary_role
+    dj["roles"] = roles
     shows = await db.shows.find({"dj_id": user_id}, {"_id": 0}).to_list(20)
     return {**dj, "shows": shows}
 
@@ -1193,13 +1248,17 @@ async def get_dj(user_id: str):
 @api_router.get("/admin/users")
 async def list_users(user: dict = Depends(require_roles("admin"))):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    for u in users:
+        primary_role, roles = normalize_roles(u.get("role"), u.get("roles"))
+        u["role"] = primary_role
+        u["roles"] = roles
     return users
 
 @api_router.put("/admin/users/{user_id}/role")
 async def update_user_role(user_id: str, req: UserRoleUpdate, user: dict = Depends(require_roles("admin"))):
     if req.role not in ["admin", "dj", "editor", "listener"]:
         raise HTTPException(status_code=400, detail="Invalid role")
-    result = await db.users.update_one({"user_id": user_id}, {"$set": {"role": req.role}})
+    result = await db.users.update_one({"user_id": user_id}, {"$set": {"role": req.role, "roles": [req.role]}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": f"Role updated to {req.role}"}
@@ -2062,6 +2121,7 @@ async def startup():
             "password_hash": hash_password(admin_password),
             "name": "Station Admin",
             "role": "admin",
+            "roles": ["admin"],
             "bio": "The Beat 515 Station Administrator",
             "avatar_url": "",
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -2069,6 +2129,14 @@ async def startup():
         logger.info("Admin user seeded")
     elif not verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
+
+    # Backfill roles array for legacy users.
+    async for legacy_user in db.users.find({"$or": [{"roles": {"$exists": False}}, {"roles": {"$size": 0}}]}, {"_id": 0, "user_id": 1, "role": 1}):
+        primary_role, roles = normalize_roles(legacy_user.get("role"), [])
+        await db.users.update_one(
+            {"user_id": legacy_user["user_id"]},
+            {"$set": {"role": primary_role, "roles": roles}}
+        )
     
     # Seed sample DJ
     dj_email = "dj@thebeat515.com"
@@ -2081,6 +2149,7 @@ async def startup():
             "password_hash": hash_password("DJBeat515!"),
             "name": "DJ Pulse",
             "role": "dj",
+            "roles": ["dj"],
             "bio": "Spinning the hottest tracks every weeknight! Your favorite Top 40 DJ.",
             "avatar_url": "",
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -2118,6 +2187,7 @@ async def startup():
             "password_hash": hash_password("News515!"),
             "name": "Sarah Chen",
             "role": "editor",
+            "roles": ["editor"],
             "bio": "Music journalist and entertainment news editor at The Beat 515.",
             "avatar_url": "",
             "created_at": datetime.now(timezone.utc).isoformat()
