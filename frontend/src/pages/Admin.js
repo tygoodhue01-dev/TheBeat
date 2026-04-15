@@ -6,6 +6,7 @@ import {
   updateRequestStatusApi, deleteRequestApi, createNewsApi, getNewsApi, updateNewsApi, deleteNewsApi,
   updateNowPlayingApi, getPendingCommentsApi, approveCommentApi, deleteCommentApi,
   getScheduleApi, createScheduleSlotApi, updateScheduleSlotApi, deleteScheduleSlotApi,
+  getEventsApi, createEventApi, updateEventApi, deleteEventApi,
   getJobApplicationsApi, updateJobApplicationStatusApi, deleteJobApplicationApi, sendEmailToApplicantApi,
   getRolesApi, getPermissionsApi, createRoleApi, updateRoleApi, deleteRoleApi,
   getPushTokensApi, sendPushNotificationApi, getPushHistoryApi,
@@ -28,6 +29,7 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [requests, setRequests] = useState([]);
   const [allNews, setAllNews] = useState([]);
+  const [events, setEvents] = useState([]);
   const [pendingComments, setPendingComments] = useState([]);
   const [scheduleSlots, setScheduleSlots] = useState([]);
   const [jobApps, setJobApps] = useState([]);
@@ -51,6 +53,7 @@ export default function Admin() {
   const [editUser, setEditUser] = useState(null);
   const [editNews, setEditNews] = useState(null);
   const [editSchedule, setEditSchedule] = useState(null);
+  const [editEvent, setEditEvent] = useState(null);
   const [emailApp, setEmailApp] = useState(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
@@ -59,12 +62,14 @@ export default function Admin() {
 
   const loadData = useCallback(async () => {
     try {
-      const [st, us, rq, nw, sc, ja, cm, rl, pm] = await Promise.all([
+      const [st, us, rq, nw, ev, sc, ja, cm, rl, pm] = await Promise.all([
         getAdminStatsApi(), getAdminUsersApi(), getAdminRequestsApi(), getNewsApi(),
+        getEventsApi(),
         getScheduleApi(), getJobApplicationsApi(), getPendingCommentsApi(),
         getRolesApi().catch(() => []), getPermissionsApi().catch(() => [])
       ]);
       setStats(st); setUsers(us); setRequests(rq); setAllNews(nw);
+      setEvents(ev);
       setScheduleSlots(sc); setJobApps(ja); setPendingComments(cm);
       setRoles(rl); setPermissions(pm);
     } catch (e) { console.error(e); }
@@ -100,6 +105,7 @@ export default function Admin() {
     { key: 'users', label: 'Users', icon: Users, roles: ['admin'] },
     { key: 'content', label: 'Publish News', icon: FileText, roles: ['admin','editor'] },
     { key: 'manage-news', label: 'Manage News', icon: Newspaper, roles: ['admin','editor'] },
+    { key: 'events', label: 'Upcoming Events', icon: Calendar, roles: ['admin'] },
     { key: 'comments', label: 'Comments', icon: MessageSquare, roles: ['admin','editor'] },
     { key: 'schedule', label: 'Schedule', icon: Calendar, roles: ['admin'] },
     { key: 'jobs', label: 'Job Applications', icon: Briefcase, roles: ['admin'] },
@@ -315,6 +321,44 @@ export default function Admin() {
     </div>
   );
 
+  const renderEvents = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Upcoming Events</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Add and manage events shown on the homepage.</p>
+        </div>
+        <Btn pink onClick={() => setEditEvent({ title: '', description: '', venue: '', date: '', time: '', image_url: '', ticket_url: '' })}>
+          <Plus size={16} /> ADD EVENT
+        </Btn>
+      </div>
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Venue</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Date</th>
+            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+          </tr></thead>
+          <tbody>
+            {events.map(e => (
+              <tr key={e.event_id} className="border-b border-white/[0.04]">
+                <td className="px-4 py-3 text-white font-medium">{e.title}</td>
+                <td className="px-4 py-3 text-[#a1a1aa]">{e.venue || '—'}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{e.date || '—'} {e.time ? `at ${e.time}` : ''}</td>
+                <td className="px-4 py-3 text-right">
+                  <button onClick={() => setEditEvent({ ...e })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                  <button onClick={() => { if (window.confirm(`Delete "${e.title}"?`)) deleteEventApi(e.event_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {events.length === 0 && <p className="text-center text-[#71717a] py-8">No events yet</p>}
+      </div>
+    </div>
+  );
+
   const renderComments = () => (
     <div>
       <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Comment Moderation</h2>
@@ -492,7 +536,7 @@ export default function Admin() {
     </div>
   );
 
-  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
+  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, events: renderEvents, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
 
   return (
     <div data-testid="admin-page">
@@ -576,6 +620,56 @@ export default function Admin() {
               try { if(editSchedule.schedule_id) { await updateScheduleSlotApi(editSchedule.schedule_id, editSchedule); } else { await createScheduleSlotApi(editSchedule); } setEditSchedule(null); loadData(); alert('Saved!'); } catch(e){alert(e.message);}
             }}>SAVE</Btn>
             <Btn className="flex-1" onClick={() => setEditSchedule(null)}>CANCEL</Btn>
+          </div>
+        </>)}
+      </Modal>
+
+      <Modal show={!!editEvent} onClose={() => setEditEvent(null)} title={editEvent?.event_id ? 'Edit Event' : 'Add Event'}>
+        {editEvent && (<>
+          <Label>TITLE</Label>
+          <Input value={editEvent.title || ''} onChange={e => setEditEvent({ ...editEvent, title: e.target.value })} />
+          <Label>DESCRIPTION</Label>
+          <Textarea rows={4} value={editEvent.description || ''} onChange={e => setEditEvent({ ...editEvent, description: e.target.value })} />
+          <Label>VENUE</Label>
+          <Input value={editEvent.venue || ''} onChange={e => setEditEvent({ ...editEvent, venue: e.target.value })} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>DATE (YYYY-MM-DD)</Label>
+              <Input value={editEvent.date || ''} onChange={e => setEditEvent({ ...editEvent, date: e.target.value })} />
+            </div>
+            <div>
+              <Label>TIME</Label>
+              <Input value={editEvent.time || ''} onChange={e => setEditEvent({ ...editEvent, time: e.target.value })} />
+            </div>
+          </div>
+          <Label>IMAGE URL</Label>
+          <Input value={editEvent.image_url || ''} onChange={e => setEditEvent({ ...editEvent, image_url: e.target.value })} />
+          <Label>TICKET URL</Label>
+          <Input value={editEvent.ticket_url || ''} onChange={e => setEditEvent({ ...editEvent, ticket_url: e.target.value })} />
+          <div className="flex gap-3 mt-6">
+            <Btn pink className="flex-1" onClick={async () => {
+              if (!editEvent.title) return alert('Title is required');
+              try {
+                const payload = {
+                  title: editEvent.title,
+                  description: editEvent.description || '',
+                  venue: editEvent.venue || '',
+                  date: editEvent.date || '',
+                  time: editEvent.time || '',
+                  image_url: editEvent.image_url || '',
+                  ticket_url: editEvent.ticket_url || ''
+                };
+                if (editEvent.event_id) {
+                  await updateEventApi(editEvent.event_id, payload);
+                } else {
+                  await createEventApi(payload);
+                }
+                setEditEvent(null);
+                loadData();
+                alert('Event saved!');
+              } catch (e) { alert(e.message); }
+            }}>SAVE</Btn>
+            <Btn className="flex-1" onClick={() => setEditEvent(null)}>CANCEL</Btn>
           </div>
         </>)}
       </Modal>

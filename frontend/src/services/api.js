@@ -233,6 +233,24 @@ export async function getEventsApi() {
   if (!res.ok) return [];
   return res.json();
 }
+export async function createEventApi(data) {
+  const res = await authFetch(`${API_BASE}/events`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function updateEventApi(eventId, data) {
+  const res = await authFetch(`${API_BASE}/events/${eventId}`, { method: 'PUT', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function deleteEventApi(eventId) {
+  const res = await authFetch(`${API_BASE}/events/${eventId}`, { method: 'DELETE' });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
 export async function getContestsApi() {
   const res = await fetch(`${API_BASE}/contests`);
   if (!res.ok) return [];

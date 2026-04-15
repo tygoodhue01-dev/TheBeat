@@ -182,6 +182,16 @@ class EventCreate(BaseModel):
     image_url: str = ""
     ticket_url: str = ""
 
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    venue: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    image_url: Optional[str] = None
+    ticket_url: Optional[str] = None
+    active: Optional[bool] = None
+
 class ContestCreate(BaseModel):
     title: str
     description: str = ""
@@ -1574,6 +1584,27 @@ async def create_event(req: EventCreate, user: dict = Depends(require_roles("adm
     await db.events.insert_one(doc)
     doc.pop("_id", None)
     return doc
+
+@api_router.put("/events/{event_id}")
+async def update_event(event_id: str, req: EventUpdate, user: dict = Depends(require_roles("admin"))):
+    update_data = {k: v for k, v in req.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.events.update_one({"event_id": event_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    updated = await db.events.find_one({"event_id": event_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/events/{event_id}")
+async def delete_event(event_id: str, user: dict = Depends(require_roles("admin"))):
+    result = await db.events.delete_one({"event_id": event_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return {"message": "Event deleted"}
 
 # ==================== CONTESTS ENDPOINTS ====================
 @api_router.get("/contests")
