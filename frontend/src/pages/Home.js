@@ -4,16 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import {
-  getNowPlayingApi, getNewsApi, getShowsApi, getEventsApi,
+  getNowPlayingApi, getNewsApi, getEventsApi,
   getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi
 } from '../services/api';
-import { Play, Pause, Share2, Music, Clock, Cloud, Mic2, Headphones } from 'lucide-react';
+import { Play, Pause, Share2, Music, Clock, Cloud, Headphones } from 'lucide-react';
 
 export default function Home() {
   const { user } = useAuth();
   const [np, setNp] = useState({ song_title: 'The Beat 515', artist: 'Live Radio', dj_name: 'AutoDJ' });
   const [news, setNews] = useState([]);
-  const [shows, setShows] = useState([]);
   const [events, setEvents] = useState([]);
   const [contests, setContests] = useState([]);
   const [podcasts, setPodcasts] = useState([]);
@@ -24,11 +23,11 @@ export default function Home() {
 
   useEffect(() => {
     Promise.all([
-      getNowPlayingApi(), getNewsApi(), getShowsApi(),
+      getNowPlayingApi(), getNewsApi(),
       getEventsApi(), getContestsApi(), getPodcastsApi(),
       getDjsApi(), getStreamConfigApi()
-    ]).then(([npD, n, s, e, c, p, d, sc]) => {
-      setNp(npD); setNews(n); setShows(s);
+    ]).then(([npD, n, e, c, p, d, sc]) => {
+      setNp(npD); setNews(n);
       setEvents(e); setContests(c); setPodcasts(p); setDjs(d);
       setStreamUrl(sc.stream_url || 'https://das-edge62-live365-dal03.cdnstream.com/a55796');
     });
@@ -130,36 +129,24 @@ export default function Home() {
       </div>
 
       {/* ===== DJS ===== */}
-      {(shows.length > 0 || djs.length > 0) && (
+      {djs.length > 0 && (
         <section className="max-w-[1200px] mx-auto px-8 mt-12" data-testid="shows-section">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">DJS</h2>
             <span className="text-[13px] text-[#71717a]">Meet your on-air talent</span>
           </div>
           <div className="flex flex-wrap gap-5">
-            {shows.map(sh => (
-              <div key={sh.show_id} className="w-[23%] min-w-[200px] bg-[#18181b] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.1)]" data-testid={`show-card-${sh.show_id}`}>
-                {sh.image_url ? (
-                  <img src={sh.image_url} alt={sh.name} className="w-full h-[140px] object-cover" />
-                ) : (
-                  <div className="w-full h-[140px] bg-[#27272a] flex items-center justify-center">
-                    <Mic2 size={32} className="text-[#71717a]" />
-                  </div>
-                )}
-                <div className="p-4">
-                  <h3 className="text-base font-bold text-white">{sh.name}</h3>
-                  <p className="text-xs text-[#00F0FF] mt-1">{sh.schedule}</p>
-                  <p className="text-xs text-[#71717a] mt-1">{sh.dj_name}</p>
-                  <p className="text-xs text-[#a1a1aa] mt-2 leading-[18px] line-clamp-3">{sh.description}</p>
-                </div>
-              </div>
-            ))}
             {djs.map(d => (
               <div key={d.user_id} className="w-[23%] min-w-[200px] bg-[#18181b] rounded-lg p-5 flex flex-col items-center border border-[rgba(255,255,255,0.1)]" data-testid={`dj-card-${d.user_id}`}>
-                <div className="w-16 h-16 rounded-full bg-[#FF007F] flex items-center justify-center mb-3">
-                  <span className="text-[28px] font-black text-white">{d.name?.charAt(0)}</span>
-                </div>
+                {d.avatar_url ? (
+                  <img src={d.avatar_url} alt={d.name} className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-[#FF007F] flex items-center justify-center mb-3">
+                    <span className="text-[28px] font-black text-white">{d.name?.charAt(0)}</span>
+                  </div>
+                )}
                 <h3 className="text-base font-bold text-white">{d.name}</h3>
+                <p className="text-[10px] font-bold text-[#00F0FF] tracking-[1px] mt-1">DJ</p>
                 <p className="text-xs text-[#a1a1aa] text-center mt-2 leading-[18px]">{d.bio}</p>
               </div>
             ))}

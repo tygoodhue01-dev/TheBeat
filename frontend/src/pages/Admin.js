@@ -7,7 +7,7 @@ import {
   updateNowPlayingApi, getPendingCommentsApi, approveCommentApi, deleteCommentApi,
   getScheduleApi, createScheduleSlotApi, updateScheduleSlotApi, deleteScheduleSlotApi,
   getShowsApi, createShowApi, updateShowApi, deleteShowApi,
-  getPodcastsApi, createPodcastApi, updatePodcastApi, deletePodcastApi, getDjsApi,
+  getPodcastsApi, createPodcastApi, updatePodcastApi, deletePodcastApi,
   getEventsApi, createEventApi, updateEventApi, deleteEventApi,
   getContestsApi, createContestApi, updateContestApi, deleteContestApi,
   getJobApplicationsApi, updateJobApplicationStatusApi, deleteJobApplicationApi, sendEmailToApplicantApi,
@@ -36,7 +36,6 @@ export default function Admin() {
   const [contests, setContests] = useState([]);
   const [shows, setShows] = useState([]);
   const [podcasts, setPodcasts] = useState([]);
-  const [djs, setDjs] = useState([]);
   const [pendingComments, setPendingComments] = useState([]);
   const [scheduleSlots, setScheduleSlots] = useState([]);
   const [jobApps, setJobApps] = useState([]);
@@ -64,7 +63,6 @@ export default function Admin() {
   const [editContest, setEditContest] = useState(null);
   const [editShow, setEditShow] = useState(null);
   const [editPodcast, setEditPodcast] = useState(null);
-  const [editDj, setEditDj] = useState(null);
   const [emailApp, setEmailApp] = useState(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
@@ -73,13 +71,12 @@ export default function Admin() {
 
   const loadData = useCallback(async () => {
     try {
-      const [st, us, rq, nw, ev, ct, sh, pd, dj, sc, ja, cm, rl, pm] = await Promise.all([
+      const [st, us, rq, nw, ev, ct, sh, pd, sc, ja, cm, rl, pm] = await Promise.all([
         getAdminStatsApi(), getAdminUsersApi(), getAdminRequestsApi(), getNewsApi(),
         getEventsApi(),
         getContestsApi(true),
         getShowsApi(),
         getPodcastsApi(),
-        getDjsApi(),
         getScheduleApi(), getJobApplicationsApi(), getPendingCommentsApi(),
         getRolesApi().catch(() => []), getPermissionsApi().catch(() => [])
       ]);
@@ -88,7 +85,6 @@ export default function Admin() {
       setContests(ct);
       setShows(sh);
       setPodcasts(pd);
-      setDjs(dj);
       setScheduleSlots(sc); setJobApps(ja); setPendingComments(cm);
       setRoles(rl); setPermissions(pm);
     } catch (e) { console.error(e); }
@@ -126,9 +122,7 @@ export default function Admin() {
     { key: 'manage-news', label: 'Manage News', icon: Newspaper, roles: ['admin','editor'] },
     { key: 'events', label: 'Upcoming Events', icon: Calendar, roles: ['admin'] },
     { key: 'contests', label: 'Contests & Giveaways', icon: Gift, roles: ['admin'] },
-    { key: 'shows', label: 'Shows', icon: Radio, roles: ['admin','dj'] },
-    { key: 'podcasts', label: 'Podcasts', icon: Music, roles: ['admin','dj'] },
-    { key: 'djs', label: 'DJs', icon: Users, roles: ['admin'] },
+    { key: 'podcasts-shows', label: 'Podcasts & Shows', icon: Radio, roles: ['admin','dj'] },
     { key: 'comments', label: 'Comments', icon: MessageSquare, roles: ['admin','editor'] },
     { key: 'schedule', label: 'Schedule', icon: Calendar, roles: ['admin'] },
     { key: 'jobs', label: 'Job Applications', icon: Briefcase, roles: ['admin'] },
@@ -437,113 +431,85 @@ export default function Admin() {
     </div>
   );
 
-  const renderShows = () => (
+  const renderPodcastsShows = () => (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Shows</h2>
-          <p className="text-sm text-[#a1a1aa] mt-1">Manage shows displayed on the homepage.</p>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Podcasts & Shows</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Manage all podcast and show entries in one place.</p>
         </div>
-        <Btn pink onClick={() => setEditShow({ name: '', description: '', dj_id: '', dj_name: '', schedule: '', image_url: '' })}>
-          <Plus size={16} /> ADD SHOW
-        </Btn>
+        <div className="flex gap-2">
+          <Btn onClick={() => setEditShow({ name: '', description: '', dj_id: '', dj_name: '', schedule: '', image_url: '' })}>
+            <Plus size={16} /> ADD SHOW
+          </Btn>
+          <Btn pink onClick={() => setEditPodcast({ title: '', description: '', show_name: '', dj_name: '', duration: '', audio_url: '', image_url: '' })}>
+            <Plus size={16} /> ADD PODCAST
+          </Btn>
+        </div>
       </div>
       <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">DJ</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Schedule</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {shows.map(s => (
-              <tr key={s.show_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white font-medium">{s.name}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{s.dj_name || '—'}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{s.schedule || '—'}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditShow({ ...s })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  <button onClick={() => { if (window.confirm(`Delete "${s.name}"?`)) deleteShowApi(s.show_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {shows.length === 0 && <p className="text-center text-[#71717a] py-8">No shows yet</p>}
-      </div>
-    </div>
-  );
-
-  const renderPodcasts = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Podcasts</h2>
-          <p className="text-sm text-[#a1a1aa] mt-1">Manage podcast episodes displayed on the homepage.</p>
-        </div>
-        <Btn pink onClick={() => setEditPodcast({ title: '', description: '', show_name: '', dj_name: '', duration: '', audio_url: '', image_url: '' })}>
-          <Plus size={16} /> ADD PODCAST
-        </Btn>
-      </div>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Type</th>
             <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Show</th>
             <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">DJ</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Details</th>
             <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
           </tr></thead>
           <tbody>
-            {podcasts.map(p => (
-              <tr key={p.podcast_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white font-medium">{p.title}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{p.show_name || '—'}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{p.dj_name || '—'}</td>
+            {[
+              ...shows.map(s => ({
+                itemType: 'show',
+                id: s.show_id,
+                title: s.name,
+                dj: s.dj_name || '',
+                details: s.schedule || '',
+                original: s
+              })),
+              ...podcasts.map(p => ({
+                itemType: 'podcast',
+                id: p.podcast_id,
+                title: p.title,
+                dj: p.dj_name || '',
+                details: p.show_name || p.duration || '',
+                original: p
+              }))
+            ].map(item => (
+              <tr key={`${item.itemType}-${item.id}`} className="border-b border-white/[0.04]">
+                <td className="px-4 py-3">
+                  <span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${item.itemType === 'show' ? 'bg-[rgba(0,240,255,0.12)] text-[#00F0FF]' : 'bg-[rgba(255,0,127,0.12)] text-[#FF007F]'}`}>
+                    {item.itemType.toUpperCase()}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-white font-medium">{item.title}</td>
+                <td className="px-4 py-3 text-[#a1a1aa]">{item.dj || '—'}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{item.details || '—'}</td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditPodcast({ ...p })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  <button onClick={() => { if (window.confirm(`Delete "${p.title}"?`)) deletePodcastApi(p.podcast_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                  <button
+                    onClick={() => item.itemType === 'show' ? setEditShow({ ...item.original }) : setEditPodcast({ ...item.original })}
+                    className="text-xs text-[#00F0FF] font-semibold hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete "${item.title}"?`)) {
+                        const action = item.itemType === 'show'
+                          ? deleteShowApi(item.id)
+                          : deletePodcastApi(item.id);
+                        action.then(loadData).catch(err => alert(err.message));
+                      }
+                    }}
+                    className="text-xs text-red-400 font-semibold hover:underline ml-3"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {podcasts.length === 0 && <p className="text-center text-[#71717a] py-8">No podcasts yet</p>}
-      </div>
-    </div>
-  );
-
-  const renderDjs = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">DJs</h2>
-          <p className="text-sm text-[#a1a1aa] mt-1">Edit DJ profiles shown on the homepage.</p>
-        </div>
-      </div>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Email</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Bio</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {djs.map(d => (
-              <tr key={d.user_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white font-medium">{d.name}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{d.email}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs max-w-[340px] truncate">{d.bio || '—'}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditDj({ ...d })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  <button onClick={() => { if (window.confirm(`Remove DJ "${d.name}"?`)) deleteUserApi(d.user_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {djs.length === 0 && <p className="text-center text-[#71717a] py-8">No DJs yet</p>}
+        {(shows.length + podcasts.length) === 0 && <p className="text-center text-[#71717a] py-8">No shows or podcasts yet</p>}
       </div>
     </div>
   );
@@ -725,7 +691,7 @@ export default function Admin() {
     </div>
   );
 
-  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, events: renderEvents, contests: renderContests, shows: renderShows, podcasts: renderPodcasts, djs: renderDjs, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
+  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, events: renderEvents, contests: renderContests, 'podcasts-shows': renderPodcastsShows, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
 
   return (
     <div data-testid="admin-page">
@@ -983,28 +949,6 @@ export default function Admin() {
               } catch (e) { alert(e.message); }
             }}>SAVE</Btn>
             <Btn className="flex-1" onClick={() => setEditPodcast(null)}>CANCEL</Btn>
-          </div>
-        </>)}
-      </Modal>
-
-      <Modal show={!!editDj} onClose={() => setEditDj(null)} title="Edit DJ">
-        {editDj && (<>
-          <Label>NAME</Label>
-          <Input value={editDj.name || ''} onChange={e => setEditDj({ ...editDj, name: e.target.value })} />
-          <Label>EMAIL</Label>
-          <Input value={editDj.email || ''} onChange={e => setEditDj({ ...editDj, email: e.target.value })} />
-          <Label>BIO</Label>
-          <Textarea rows={4} value={editDj.bio || ''} onChange={e => setEditDj({ ...editDj, bio: e.target.value })} />
-          <div className="flex gap-3 mt-6">
-            <Btn pink className="flex-1" onClick={async () => {
-              try {
-                await updateUserApi(editDj.user_id, { name: editDj.name, email: editDj.email, role: 'dj', bio: editDj.bio });
-                setEditDj(null);
-                loadData();
-                alert('DJ updated!');
-              } catch (e) { alert(e.message); }
-            }}>SAVE</Btn>
-            <Btn className="flex-1" onClick={() => setEditDj(null)}>CANCEL</Btn>
           </div>
         </>)}
       </Modal>
