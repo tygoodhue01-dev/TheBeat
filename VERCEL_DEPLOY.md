@@ -18,9 +18,9 @@
 3. **Configure Project:**
    - **Framework Preset:** Other
    - **Root Directory:** `./` (leave as is)
-   - **Build Command:** `cd frontend && npx expo export --platform web`
-   - **Output Directory:** `frontend/dist`
-   - **Install Command:** `cd frontend && yarn install`
+   - **Build Command:** `cd frontend && npm run build`
+   - **Output Directory:** `frontend/build`
+   - **Install Command:** `cd frontend && npm install`
 
 4. **Add Environment Variables:**
    Click "Environment Variables" and add:
@@ -61,9 +61,9 @@ Follow prompts:
 - Project name? **radio** (or your choice)
 - Directory? `./` (press Enter)
 - Override settings? **Y**
-  - Build Command: `cd frontend && npx expo export --platform web`
-  - Output Directory: `frontend/dist`
-  - Install Command: `cd frontend && yarn install`
+  - Build Command: `cd frontend && npm run build`
+  - Output Directory: `frontend/build`
+  - Install Command: `cd frontend && npm install`
 
 **Deploy to production:**
 ```bash
