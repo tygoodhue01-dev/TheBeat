@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getStreamConfigApi } from './services/api';
+import { isStaffUser } from './utils/staff';
 import Home from './pages/Home';
 import News from './pages/News';
 import NewsDetail from './pages/NewsDetail';
@@ -29,6 +30,7 @@ function maintenanceModeOn(cfg) {
 
 function MaintenanceGate({ children }) {
   const location = useLocation();
+  const { user } = useAuth();
   const [maintenance, setMaintenance] = useState(null);
 
   useEffect(() => {
@@ -55,6 +57,7 @@ function MaintenanceGate({ children }) {
 
   const path = location.pathname;
   const allowDuringMaintenance = path === '/login' || path === '/admin';
+  const staffBypass = isStaffUser(user);
 
   if (maintenance === null) {
     return (
@@ -64,7 +67,7 @@ function MaintenanceGate({ children }) {
     );
   }
 
-  if (maintenance && !allowDuringMaintenance) {
+  if (maintenance && !allowDuringMaintenance && !staffBypass) {
     return <Maintenance />;
   }
 

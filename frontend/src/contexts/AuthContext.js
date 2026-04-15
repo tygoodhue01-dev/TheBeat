@@ -19,7 +19,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
-  const login = async (email, password) => { const u = await loginApi(email, password); setUser(u); };
+  const login = async (email, password) => {
+    const u = await loginApi(email, password);
+    setUser(u);
+    return u;
+  };
   const register = async (email, password, name) => { const u = await registerApi(email, password, name); setUser(u); };
   const logout = async () => { await logoutApi(); setUser(null); };
   const refresh = async () => { await checkAuth(); };
