@@ -14,6 +14,7 @@ export default function ProfileDrawer({ open, onClose }) {
   const [points, setPoints] = useState({ points: 0 });
   const [favorites, setFavorites] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [showAllFavorites, setShowAllFavorites] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function ProfileDrawer({ open, onClose }) {
       setName(user.name || '');
       setBio(user.bio || '');
       setEditing(false);
+      setShowAllFavorites(false);
       Promise.all([
         getMyStatsApi().catch(() => ({})),
         getMyPointsApi().catch(() => ({ points: 0 })),
@@ -69,6 +71,7 @@ export default function ProfileDrawer({ open, onClose }) {
   };
 
   const avatarSrc = user.avatar_url ? mediaUrl(user.avatar_url) : null;
+  const visibleFavorites = showAllFavorites ? favorites : favorites.slice(0, 2);
 
   const handleLogout = () => {
     logout();
@@ -192,7 +195,7 @@ export default function ProfileDrawer({ open, onClose }) {
                 <span className="text-[10px] font-extrabold text-[#a1a1aa] tracking-[2px]">MY FAVORITES</span>
                 <span className="text-[10px] font-bold text-[#71717a]">{favorites.length}</span>
               </div>
-              {favorites.slice(0, 5).map((f, i) => (
+              {visibleFavorites.map((f, i) => (
                 <div key={i} className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)]">
                   <div className="w-6 h-6 rounded-full bg-[rgba(255,0,127,0.15)] flex items-center justify-center mr-2.5">
                     <span className="text-[9px] font-extrabold text-[#FF007F]">{i + 1}</span>
@@ -203,6 +206,16 @@ export default function ProfileDrawer({ open, onClose }) {
                   </div>
                 </div>
               ))}
+              {favorites.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllFavorites((v) => !v)}
+                  className="mt-1 text-[11px] font-bold text-[#00F0FF] hover:underline"
+                  data-testid="profile-favorites-toggle"
+                >
+                  {showAllFavorites ? 'Show less' : `View more (${favorites.length - 2})`}
+                </button>
+              )}
             </div>
           )}
 

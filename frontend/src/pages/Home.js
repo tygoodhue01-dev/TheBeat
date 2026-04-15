@@ -5,7 +5,7 @@ import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import {
   getNowPlayingApi, getNewsApi, getEventsApi,
-  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, subscribeNewsletterApi, mediaUrl
+  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, subscribeNewsletterApi, getMyFavoritesApi, toggleSongFavoriteApi, mediaUrl
 } from '../services/api';
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
 
@@ -52,6 +52,11 @@ function formatDisplayTime(timeSlot) {
   return m ? m[1].replace(/\s+/g, ' ') : timeSlot.split('-')[0]?.trim() || timeSlot;
 }
 
+function createSongFavoriteId(songTitle, artist) {
+  const raw = `${songTitle || ''}::${artist || ''}`.trim().toLowerCase();
+  return raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'now-playing-track';
+}
+
 /** Next upcoming slot using local time; compares start time only */
 function getNextShow(schedule) {
   if (!schedule?.length) return null;
@@ -95,6 +100,9 @@ export default function Home() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [favoriteSongIds, setFavoriteSongIds] = useState(new Set());
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [favoriteToast, setFavoriteToast] = useState('');
   const [news, setNews] = useState([]);
   const [events, setEvents] = useState([]);
   const [contests, setContests] = useState([]);
@@ -106,6 +114,11 @@ export default function Home() {
   const audioRef = useRef(null);
 
   const nextShow = useMemo(() => getNextShow(schedule), [schedule]);
+  const currentSongFavoriteId = useMemo(
+    () => createSongFavoriteId(np.song_title, np.artist),
+    [np.song_title, np.artist]
+  );
+  const isCurrentFavorite = favoriteSongIds.has(currentSongFavoriteId);
 
   useEffect(() => {
     Promise.all([
@@ -121,6 +134,16 @@ export default function Home() {
     const iv = setInterval(() => getNowPlayingApi().then(setNp), 15000);
     return () => clearInterval(iv);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setFavoriteSongIds(new Set());
+      return;
+    }
+    getMyFavoritesApi().then((items) => {
+      setFavoriteSongIds(new Set(items.filter((i) => i.type === 'song').map((i) => i.song_id)));
+    }).catch(() => setFavoriteSongIds(new Set()));
+  }, [user]);
 
   const togglePlay = () => {
     if (!audioRef.current) {
@@ -153,6 +176,32 @@ export default function Home() {
       setNewsletterStatus(err.message || 'Unable to subscribe right now.');
     } finally {
       setNewsletterLoading(false);
+    }
+  };
+
+  const handleToggleCurrentFavorite = async () => {
+    if (!user || !currentSongFavoriteId || favoriteLoading) return;
+    setFavoriteLoading(true);
+    const previous = new Set(favoriteSongIds);
+    const optimistic = new Set(favoriteSongIds);
+    if (optimistic.has(currentSongFavoriteId)) optimistic.delete(currentSongFavoriteId);
+    else optimistic.add(currentSongFavoriteId);
+    setFavoriteSongIds(optimistic);
+    try {
+      const result = await toggleSongFavoriteApi(currentSongFavoriteId, np.song_title || '', np.artist || '');
+      setFavoriteSongIds((curr) => {
+        const next = new Set(curr);
+        if (result?.favorited) next.add(currentSongFavoriteId);
+        else next.delete(currentSongFavoriteId);
+        return next;
+      });
+      setFavoriteToast(result?.favorited ? 'Added to favorites' : 'Removed from favorites');
+    } catch (_) {
+      setFavoriteSongIds(previous);
+      setFavoriteToast('Could not update favorite right now');
+    } finally {
+      setFavoriteLoading(false);
+      setTimeout(() => setFavoriteToast(''), 2200);
     }
   };
 
@@ -191,6 +240,18 @@ export default function Home() {
             <p className="text-sm text-[#71717a] mt-2 mb-6">
               {(!np.song_title || np.song_title.toLowerCase() === 'unknown') ? 'Tune in for the hottest hits' : `with ${np.dj_name || 'AutoDJ'}`}
             </p>
+            {user ? (
+              <button
+                type="button"
+                onClick={handleToggleCurrentFavorite}
+                disabled={favoriteLoading}
+                className="inline-flex items-center gap-2 mb-5 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-full px-3.5 py-2 text-[11px] font-bold tracking-[1px] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,0,127,0.35)] transition-colors disabled:opacity-50"
+                data-testid="now-playing-favorite-btn"
+              >
+                <Heart size={14} className={isCurrentFavorite ? 'text-[#FF007F] fill-[#FF007F]' : 'text-[#a1a1aa]'} />
+                {isCurrentFavorite ? 'FAVORITED' : 'FAVORITE SONG'}
+              </button>
+            ) : null}
 
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <button onClick={togglePlay} data-testid="play-pause-btn"
@@ -448,6 +509,12 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {favoriteToast ? (
+        <div className="fixed bottom-4 right-4 z-[120] bg-[#18181b] border border-[rgba(255,255,255,0.15)] rounded-lg px-3.5 py-2 text-xs font-bold text-white tracking-[0.8px] shadow-lg">
+          {favoriteToast}
+        </div>
+      ) : null}
 
       <Footer />
     </div>
