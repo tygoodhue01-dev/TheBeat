@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Play, Pause, Radio, Music, Wrench, Mail, Lock, LogIn, Shield } from 'lucide-react';
 import {
   getStreamConfigApi,
@@ -134,57 +134,7 @@ export default function Maintenance() {
         <p className="text-center text-sm text-[#00F0FF] font-bold tracking-[2px] mt-2">{tagline}</p>
         <p className="text-center text-sm text-[#a1a1aa] mt-6 leading-relaxed px-2">{loading ? 'Loading…' : message}</p>
 
-        <div className="mt-8 rounded-2xl border border-[rgba(0,240,255,0.2)] bg-[#18181b]/95 backdrop-blur-md p-5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)]" data-testid="maintenance-staff-login">
-          <div className="flex items-center gap-2 mb-3">
-            <Shield size={18} className="text-[#00F0FF]" />
-            <span className="text-xs font-extrabold text-[#00F0FF] tracking-[2px]">STAFF ACCESS</span>
-          </div>
-          <p className="text-[11px] text-[#71717a] mb-4 leading-relaxed">
-            Sign in with an admin, DJ, or editor account to use the full site during maintenance. Listener accounts cannot sign in here.
-          </p>
-          <form onSubmit={handleStaffLogin} className="space-y-3">
-            <div className="relative">
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a]" />
-              <input
-                type="email"
-                value={staffEmail}
-                onChange={(e) => setStaffEmail(e.target.value)}
-                placeholder="Staff email"
-                required
-                autoComplete="username"
-                className="w-full bg-[#09090b] border border-[rgba(255,255,255,0.12)] rounded-lg pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-[#52525b] focus:border-[#00F0FF] focus:outline-none"
-                data-testid="maintenance-staff-email"
-              />
-            </div>
-            <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a]" />
-              <input
-                type="password"
-                value={staffPassword}
-                onChange={(e) => setStaffPassword(e.target.value)}
-                placeholder="Password"
-                required
-                autoComplete="current-password"
-                className="w-full bg-[#09090b] border border-[rgba(255,255,255,0.12)] rounded-lg pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-[#52525b] focus:border-[#00F0FF] focus:outline-none"
-                data-testid="maintenance-staff-password"
-              />
-            </div>
-            {staffError ? (
-              <p className="text-xs text-red-400" data-testid="maintenance-staff-error">{staffError}</p>
-            ) : null}
-            <button
-              type="submit"
-              disabled={staffLoading}
-              className="w-full py-2.5 rounded-lg bg-[#FF007F] text-white text-sm font-bold tracking-[0.5px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-              data-testid="maintenance-staff-submit"
-            >
-              <LogIn size={16} />
-              {staffLoading ? 'Signing in…' : 'Sign in as staff'}
-            </button>
-          </form>
-        </div>
-
-        <div className="mt-10 rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[#18181b]/90 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+        <div className="mt-8 rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[#18181b]/90 backdrop-blur-md p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
           <div className="flex items-center gap-2 mb-4">
             <Radio size={20} className="text-[#FF007F]" />
             <span className="text-xs font-extrabold text-[#71717a] tracking-[2px]">LIVE STREAM</span>
@@ -239,14 +189,54 @@ export default function Maintenance() {
           )}
         </div>
 
-        <div className="mt-10 pt-6 border-t border-[rgba(255,255,255,0.08)] text-center">
-          <Link
-            to="/admin"
-            className="text-[11px] font-semibold text-[#71717a] hover:text-[#00F0FF] transition-colors tracking-wide"
-            data-testid="maintenance-admin-link"
-          >
-            Admin login
-          </Link>
+        <div className="mt-8 rounded-2xl border border-[rgba(0,240,255,0.2)] bg-[#18181b]/95 backdrop-blur-md p-5 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.4)]" data-testid="maintenance-staff-login">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield size={18} className="text-[#00F0FF]" />
+            <span className="text-xs font-extrabold text-[#00F0FF] tracking-[2px]">STAFF ACCESS</span>
+          </div>
+          <p className="text-[11px] text-[#71717a] mb-4 leading-relaxed">
+            Sign in with an admin, DJ, or editor account to use the full site during maintenance. Listener accounts cannot sign in here.
+          </p>
+          <form onSubmit={handleStaffLogin} className="space-y-3">
+            <div className="relative">
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a]" />
+              <input
+                type="email"
+                value={staffEmail}
+                onChange={(e) => setStaffEmail(e.target.value)}
+                placeholder="Staff email"
+                required
+                autoComplete="username"
+                className="w-full bg-[#09090b] border border-[rgba(255,255,255,0.12)] rounded-lg pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-[#52525b] focus:border-[#00F0FF] focus:outline-none"
+                data-testid="maintenance-staff-email"
+              />
+            </div>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717a]" />
+              <input
+                type="password"
+                value={staffPassword}
+                onChange={(e) => setStaffPassword(e.target.value)}
+                placeholder="Password"
+                required
+                autoComplete="current-password"
+                className="w-full bg-[#09090b] border border-[rgba(255,255,255,0.12)] rounded-lg pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-[#52525b] focus:border-[#00F0FF] focus:outline-none"
+                data-testid="maintenance-staff-password"
+              />
+            </div>
+            {staffError ? (
+              <p className="text-xs text-red-400" data-testid="maintenance-staff-error">{staffError}</p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={staffLoading}
+              className="w-full py-2.5 rounded-lg bg-[#FF007F] text-white text-sm font-bold tracking-[0.5px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              data-testid="maintenance-staff-submit"
+            >
+              <LogIn size={16} />
+              {staffLoading ? 'Signing in…' : 'Sign in as staff'}
+            </button>
+          </form>
         </div>
       </div>
     </div>
