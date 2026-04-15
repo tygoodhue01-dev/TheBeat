@@ -81,6 +81,21 @@ def normalize_avatar_url(value: Optional[str]) -> str:
         return raw
     return raw
 
+def create_song_key(song_title: str = "", artist: str = "") -> str:
+    raw = f"{(song_title or '').strip().lower()}::{(artist or '').strip().lower()}"
+    chars = []
+    prev_dash = False
+    for ch in raw:
+        if ch.isalnum():
+            chars.append(ch)
+            prev_dash = False
+        else:
+            if not prev_dash:
+                chars.append("-")
+                prev_dash = True
+    key = "".join(chars).strip("-")
+    return key or "song"
+
 async def get_current_user(request: Request) -> dict:
     auth_header = request.headers.get("Authorization", "")
     token = None
@@ -556,16 +571,30 @@ async def get_song_ratings(song_id: str):
 
 @api_router.post("/songs/{song_id}/favorite")
 async def toggle_favorite(song_id: str, song_title: str = "", artist: str = "", user: dict = Depends(get_current_user)):
-    existing = await db.favorites.find_one({"user_id": user["user_id"], "song_id": song_id})
+    song_key = create_song_key(song_title, artist)
+    existing = await db.favorites.find_one({
+        "user_id": user["user_id"],
+        "$or": [
+            {"song_id": song_id},
+            {"song_key": song_key}
+        ]
+    })
     
     if existing:
-        await db.favorites.delete_one({"user_id": user["user_id"], "song_id": song_id})
+        await db.favorites.delete_many({
+            "user_id": user["user_id"],
+            "$or": [
+                {"song_id": song_id},
+                {"song_key": song_key}
+            ]
+        })
         return {"message": "Removed from favorites", "favorited": False}
     else:
         fav_doc = {
             "user_id": user["user_id"],
             "type": "song",
             "song_id": song_id,
+            "song_key": song_key,
             "song_title": song_title,
             "artist": artist,
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -575,8 +604,18 @@ async def toggle_favorite(song_id: str, song_title: str = "", artist: str = "", 
 
 @api_router.get("/users/me/favorites")
 async def get_my_favorites(user: dict = Depends(get_current_user)):
-    favorites = await db.favorites.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return favorites
+    favorites = await db.favorites.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    seen_song_keys = set()
+    deduped = []
+    for fav in favorites:
+        if fav.get("type") == "song":
+            song_key = fav.get("song_key") or create_song_key(fav.get("song_title", ""), fav.get("artist", ""))
+            if song_key in seen_song_keys:
+                continue
+            seen_song_keys.add(song_key)
+            fav["song_key"] = song_key
+        deduped.append(fav)
+    return deduped[:100]
 
 @api_router.put("/users/me/profile")
 async def update_my_profile(req: ProfileUpdate, user: dict = Depends(get_current_user)):

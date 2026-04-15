@@ -6,6 +6,11 @@ import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { formatTimeCentral } from '../utils/time';
 
+function createSongFavoriteId(songTitle, artist) {
+  const raw = `${songTitle || ''}::${artist || ''}`.trim().toLowerCase();
+  return raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'song';
+}
+
 export default function RecentlyPlayed() {
   const { user } = useAuth();
   const [songs, setSongs] = useState([]);
@@ -20,13 +25,21 @@ export default function RecentlyPlayed() {
       return;
     }
     getMyFavoritesApi().then((items) => {
-      setFavoriteSongIds(new Set(items.filter((i) => i.type === 'song').map((i) => i.song_id)));
+      setFavoriteSongIds(new Set(
+        items
+          .filter((i) => i.type === 'song')
+          .flatMap((i) => {
+            const stableId = createSongFavoriteId(i.song_title, i.artist);
+            return [i.song_id, stableId].filter(Boolean);
+          })
+      ));
     }).catch(() => setFavoriteSongIds(new Set()));
   }, [user]);
 
   const toggleFavorite = async (song) => {
-    if (!user || !song?.song_id || updatingFavoriteId) return;
-    const songId = song.song_id;
+    if (!user || updatingFavoriteId) return;
+    const songId = createSongFavoriteId(song?.song_title, song?.artist);
+    if (!songId) return;
     setUpdatingFavoriteId(songId);
     const currentlyFav = favoriteSongIds.has(songId);
     const next = new Set(favoriteSongIds);
@@ -61,8 +74,11 @@ export default function RecentlyPlayed() {
           <div className="text-center py-16 text-[#71717a]">No recently played songs available yet.</div>
         ) : (
           <div className="space-y-2" data-testid="recently-played-list">
-            {songs.map((s, i) => (
-              <div key={i} className="bg-[#18181b] rounded-lg px-4 sm:px-5 py-3 flex items-center gap-3 sm:gap-4 border border-[rgba(255,255,255,0.1)] hover:bg-[#27272a] transition-colors" data-testid={`song-item-${i}`}>
+            {songs.map((s, i) => {
+              const stableSongId = createSongFavoriteId(s.song_title, s.artist);
+              const isFavorite = favoriteSongIds.has(stableSongId);
+              return (
+              <div key={stableSongId || i} className="bg-[#18181b] rounded-lg px-4 sm:px-5 py-3 flex items-center gap-3 sm:gap-4 border border-[rgba(255,255,255,0.1)] hover:bg-[#27272a] transition-colors" data-testid={`song-item-${i}`}>
                 <div className="w-10 h-10 rounded-lg bg-[rgba(255,0,127,0.1)] flex items-center justify-center flex-shrink-0">
                   <Music size={16} className="text-[#FF007F]" />
                 </div>
@@ -73,23 +89,24 @@ export default function RecentlyPlayed() {
                 <span className="text-[10px] text-[#71717a] font-mono flex-shrink-0 hidden sm:inline">
                   {s.played_at ? formatTimeCentral(s.played_at) : ''}
                 </span>
-                {user && s.song_id ? (
+                {user ? (
                   <button
                     type="button"
                     onClick={() => toggleFavorite(s)}
-                    disabled={updatingFavoriteId === s.song_id}
+                    disabled={updatingFavoriteId === stableSongId}
                     className="w-8 h-8 rounded-full bg-white/5 border border-[rgba(255,255,255,0.1)] flex items-center justify-center hover:bg-white/10 transition-colors disabled:opacity-50"
-                    data-testid={`favorite-toggle-${s.song_id}`}
+                    data-testid={`favorite-toggle-${stableSongId}`}
                     aria-label="Toggle favorite"
                   >
                     <Heart
                       size={15}
-                      className={favoriteSongIds.has(s.song_id) ? 'text-[#FF007F] fill-[#FF007F]' : 'text-[#71717a]'}
+                      className={isFavorite ? 'text-[#FF007F] fill-[#FF007F]' : 'text-[#71717a]'}
                     />
                   </button>
                 ) : null}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

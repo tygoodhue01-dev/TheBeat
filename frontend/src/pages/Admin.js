@@ -19,7 +19,7 @@ import {
 import WebNavBar from '../components/Navbar';
 import {
   LayoutGrid, Radio, Music, Users, FileText, Newspaper, MessageSquare, Calendar,
-  Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
+  Briefcase, Shield, Bell, Gift, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
   Mic, BarChart3, Heart, TrendingUp, Activity
 } from 'lucide-react';
 import { formatDateCentral, formatDateTimeCentral } from '../utils/time';
@@ -954,10 +954,6 @@ export default function Admin() {
               ))}
             </select>
           </div>
-          <div className="h-px bg-[rgba(255,255,255,0.1)] my-4" />
-          <Link to="/" className="flex items-center gap-3 px-3 py-3 text-[#71717a] hover:text-white transition-colors">
-            <ChevronLeft size={16} /><span className="text-sm">Back to Home</span>
-          </Link>
         </div>
 
         {/* Main content */}
