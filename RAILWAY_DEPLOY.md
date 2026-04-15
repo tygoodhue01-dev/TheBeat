@@ -50,7 +50,7 @@ FRONTEND_URL=https://your-vercel-app.vercel.app
 After Railway deployment, update your Vercel frontend:
 
 1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
-2. Update `EXPO_PUBLIC_BACKEND_URL` to your Railway URL:
+2. Update `REACT_APP_BACKEND_URL` to your Railway URL:
    ```
    https://your-app.up.railway.app
    ```
@@ -77,7 +77,7 @@ You should see JSON data with the currently playing song.
 - [ ] Add all environment variables
 - [ ] Generate public domain
 - [ ] Copy Railway URL
-- [ ] Update Vercel `EXPO_PUBLIC_BACKEND_URL`
+- [ ] Update Vercel `REACT_APP_BACKEND_URL`
 - [ ] Redeploy Vercel frontend
 - [ ] Test the connection
 - [ ] Done! 🎉

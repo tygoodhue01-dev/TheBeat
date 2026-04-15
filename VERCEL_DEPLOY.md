@@ -25,7 +25,7 @@
 4. **Add Environment Variables:**
    Click "Environment Variables" and add:
    ```
-   Name: EXPO_PUBLIC_BACKEND_URL
+   Name: REACT_APP_BACKEND_URL
    Value: https://build-hub-401.preview.emergentagent.com
    ```
 
@@ -122,7 +122,7 @@ TTL: Automatic
 After deployment, update backend URL if needed:
 
 1. Vercel Dashboard → Your Project → Settings → Environment Variables
-2. Edit `EXPO_PUBLIC_BACKEND_URL`
+2. Edit `REACT_APP_BACKEND_URL`
 3. Change to your production backend (when ready)
 4. Redeploy for changes to take effect
 
@@ -173,7 +173,7 @@ After deployment, update backend URL if needed:
 - Check domain status in Vercel dashboard
 
 **Backend not connecting?**
-- Check `EXPO_PUBLIC_BACKEND_URL` is set
+- Check `REACT_APP_BACKEND_URL` is set
 - Verify backend allows CORS from your domain
 - Test backend URL directly
 
