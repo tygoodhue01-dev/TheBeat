@@ -5,6 +5,7 @@ import { getRequestsApi, createRequestApi, getChatApi, sendChatApi } from '../se
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Send, Music } from 'lucide-react';
+import { formatTimeCentral } from '../utils/time';
 
 export default function Requests() {
   const { user } = useAuth();
@@ -127,7 +128,7 @@ export default function Requests() {
                     </div>
                     <p className="text-sm text-white leading-[18px]">{m.message}</p>
                     <span className="text-[9px] text-[#71717a] mt-1 block text-right">
-                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatTimeCentral(m.created_at)}
                     </span>
                   </div>
                 ))}

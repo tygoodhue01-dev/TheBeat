@@ -1,23 +1,33 @@
 const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 /** Full URL for uploaded files or relative paths stored on the API (e.g. /uploads/avatars/...) */
-export function mediaUrl(pathOrUrl) {
+export function mediaUrl(pathOrUrl, version = '') {
   if (!pathOrUrl) return '';
   const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
-  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+  const raw = String(pathOrUrl).replace(/\\/g, '/');
+  let built = '';
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
     try {
-      const parsed = new URL(pathOrUrl);
+      const parsed = new URL(raw);
       // If avatar/media points to an old host, keep only known upload paths and rebuild from current backend URL.
-      if (parsed.pathname.startsWith('/uploads/')) {
-        return `${base}${parsed.pathname}`;
+      const uploadsIdx = parsed.pathname.indexOf('/uploads/');
+      if (uploadsIdx !== -1) {
+        built = `${base}${parsed.pathname.substring(uploadsIdx)}`;
+      } else {
+        built = raw;
       }
     } catch (_) {
-      return pathOrUrl;
+      built = raw;
     }
-    return pathOrUrl;
+  } else {
+    const uploadsIdx = raw.indexOf('/uploads/');
+    const normalized = uploadsIdx !== -1 ? raw.substring(uploadsIdx) : raw;
+    const p = normalized.startsWith('/') ? normalized : `/${normalized}`;
+    built = `${base}${p}`;
   }
-  const p = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
-  return `${base}${p}`;
+  if (!version) return built;
+  const sep = built.includes('?') ? '&' : '?';
+  return `${built}${sep}v=${encodeURIComponent(version)}`;
 }
 
 function getToken() {

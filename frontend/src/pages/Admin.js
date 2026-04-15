@@ -22,6 +22,7 @@ import {
   Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
   Mic, BarChart3, Heart, TrendingUp, Activity
 } from 'lucide-react';
+import { formatDateCentral, formatDateTimeCentral } from '../utils/time';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const CATS = ['general','music','events','local','contests'];
@@ -469,7 +470,7 @@ export default function Admin() {
                     ))}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{u.created_at ? formatDateCentral(u.created_at) : ''}</td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => setEditUser({...u, roles: getUserRoles(u)})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
                   {u.user_id !== user.user_id && <button onClick={() => { if (window.confirm(`Delete ${u.name}?`)) deleteUserApi(u.user_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Remove</button>}
@@ -524,7 +525,7 @@ export default function Admin() {
               <tr key={a.news_id} className="border-b border-white/[0.04]">
                 <td className="px-4 py-3 text-white font-medium">{a.title}</td>
                 <td className="px-4 py-3 text-[#00F0FF] text-xs font-bold tracking-[1px]">{a.category?.toUpperCase()}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{new Date(a.created_at).toLocaleDateString()}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{formatDateCentral(a.created_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => setEditNews({...a})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
                   <button onClick={() => { if(window.confirm(`Delete "${a.title}"?`)) deleteNewsApi(a.news_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
@@ -731,7 +732,7 @@ export default function Admin() {
               <tr key={c.comment_id} className="border-b border-white/[0.04]">
                 <td className="px-4 py-3 text-white max-w-[300px] truncate">{c.content}</td>
                 <td className="px-4 py-3 text-[#a1a1aa]">{c.user_name}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{formatDateCentral(c.created_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={async () => { await approveCommentApi(c.comment_id); loadData(); alert('Approved'); }} className="text-xs text-[#00F0FF] font-semibold hover:underline">Approve</button>
                   <button onClick={() => { if(window.confirm(`Delete comment?`)) deleteCommentApi(c.comment_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
@@ -882,7 +883,7 @@ export default function Admin() {
               <div key={i} className="bg-[#09090b] rounded-lg p-4 border border-[rgba(255,255,255,0.05)]">
                 <div className="flex justify-between"><span className="font-bold text-white">{n.title}</span><span className="text-xs text-[#71717a]">{n.result?.success||0}/{(n.result?.success||0)+(n.result?.failed||0)}</span></div>
                 <p className="text-sm text-[#a1a1aa] mt-1">{n.body}</p>
-                <p className="text-[10px] text-[#71717a] mt-2">{new Date(n.sent_at).toLocaleString()}</p>
+                <p className="text-[10px] text-[#71717a] mt-2">{formatDateTimeCentral(n.sent_at)}</p>
               </div>
             ))}
           </div>

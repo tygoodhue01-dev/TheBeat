@@ -68,6 +68,19 @@ def normalize_roles(primary_role: Optional[str], roles_list: Optional[List[str]]
         cleaned = ["listener"]
     return cleaned[0], cleaned
 
+def normalize_avatar_url(value: Optional[str]) -> str:
+    if not value or not isinstance(value, str):
+        return ""
+    raw = value.strip().replace("\\", "/")
+    uploads_idx = raw.find("/uploads/")
+    if uploads_idx != -1:
+        return raw[uploads_idx:]
+    if raw.startswith("uploads/"):
+        return f"/{raw}"
+    if raw.startswith("/"):
+        return raw
+    return raw
+
 async def get_current_user(request: Request) -> dict:
     auth_header = request.headers.get("Authorization", "")
     token = None
@@ -87,6 +100,7 @@ async def get_current_user(request: Request) -> dict:
         primary_role, roles = normalize_roles(user.get("role"), user.get("roles"))
         user["role"] = primary_role
         user["roles"] = roles
+        user["avatar_url"] = normalize_avatar_url(user.get("avatar_url"))
         user.pop("password_hash", None)
         return user
     except jwt.ExpiredSignatureError:
@@ -623,6 +637,7 @@ async def upload_my_avatar(request: Request, file: UploadFile = File(...), user:
     primary_role, roles = normalize_roles(updated.get("role"), updated.get("roles"))
     updated["role"] = primary_role
     updated["roles"] = roles
+    updated["avatar_url"] = normalize_avatar_url(updated.get("avatar_url"))
     return {"avatar_url": updated.get("avatar_url"), "user": updated}
 
 @api_router.get("/users/me/stats")

@@ -8,6 +8,7 @@ import {
   getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, subscribeNewsletterApi, getMyFavoritesApi, toggleSongFavoriteApi, mediaUrl
 } from '../services/api';
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
+import { getCentralNowParts, getMonthDayFromIsoDate } from '../utils/time';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_INDEX = {
@@ -57,12 +58,12 @@ function createSongFavoriteId(songTitle, artist) {
   return raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'now-playing-track';
 }
 
-/** Next upcoming slot using local time; compares start time only */
+/** Next upcoming slot using Central Time; compares start time only */
 function getNextShow(schedule) {
   if (!schedule?.length) return null;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const todayIdx = now.getDay();
+  const now = getCentralNowParts();
+  const nowMin = now.hour * 60 + now.minute;
+  const todayIdx = now.dayIndex;
   const nowAbsolute = todayIdx * 1440 + nowMin;
 
   const validSlots = schedule
@@ -303,7 +304,7 @@ export default function Home() {
                 <span className="text-[#a1a1aa] font-semibold">Next: </span>
                 <span className="text-white">{nextShow.showName}</span>
                 {nextShow.timeLabel ? (
-                  <span className="text-[#00F0FF]"> · {nextShow.timeLabel}</span>
+                  <span className="text-[#00F0FF]"> · {nextShow.timeLabel} CT</span>
                 ) : null}
               </p>
             ) : (
@@ -451,23 +452,25 @@ export default function Home() {
           {events.length > 0 && (
             <div className="bg-[#18181b] rounded-xl p-5 border border-[rgba(255,255,255,0.1)]" data-testid="events-sidebar">
               <h3 className="text-xs font-extrabold text-[#FFF000] tracking-[2px] mb-4">UPCOMING EVENTS</h3>
-              {events.map(e => (
+              {events.map(e => {
+                const eventDate = getMonthDayFromIsoDate(e.date);
+                return (
                 <div key={e.event_id} className="flex items-center gap-3 mb-4 last:mb-0" data-testid={`event-${e.event_id}`}>
                   <div className="w-12 h-12 rounded-lg bg-[rgba(255,0,127,0.1)] flex flex-col items-center justify-center flex-shrink-0">
                     <span className="text-[10px] font-bold text-[#FF007F] tracking-[1px]">
-                      {e.date ? new Date(e.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : ''}
+                      {eventDate.monthShort}
                     </span>
                     <span className="text-xl font-black text-white">
-                      {e.date ? new Date(e.date + 'T00:00:00').getDate() : ''}
+                      {eventDate.day || ''}
                     </span>
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-white">{e.title}</h4>
                     <p className="text-xs text-[#a1a1aa] mt-0.5">{e.venue}</p>
-                    <p className="text-[11px] text-[#71717a] mt-0.5">{e.time}</p>
+                    <p className="text-[11px] text-[#71717a] mt-0.5">{e.time ? `${e.time} CT` : ''}</p>
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
           )}
         </div>

@@ -15,6 +15,7 @@ export default function ProfileDrawer({ open, onClose }) {
   const [favorites, setFavorites] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [showAllFavorites, setShowAllFavorites] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function ProfileDrawer({ open, onClose }) {
       setBio(user.bio || '');
       setEditing(false);
       setShowAllFavorites(false);
+      setAvatarBroken(false);
       Promise.all([
         getMyStatsApi().catch(() => ({})),
         getMyPointsApi().catch(() => ({ points: 0 })),
@@ -70,7 +72,7 @@ export default function ProfileDrawer({ open, onClose }) {
     setUploading(false);
   };
 
-  const avatarSrc = user.avatar_url ? mediaUrl(user.avatar_url) : null;
+  const avatarSrc = user.avatar_url && !avatarBroken ? mediaUrl(user.avatar_url, user.updated_at || user.user_id) : null;
   const visibleFavorites = showAllFavorites ? favorites : favorites.slice(0, 2);
 
   const handleLogout = () => {
@@ -101,7 +103,7 @@ export default function ProfileDrawer({ open, onClose }) {
             <div className="relative shrink-0">
               <div className="w-16 h-16 rounded-full bg-[#27272a] flex items-center justify-center border-[3px] overflow-hidden" style={{ borderColor: badge.color }}>
                 {avatarSrc ? (
-                  <img src={avatarSrc} alt="" className="w-full h-full object-cover" />
+                  <img src={avatarSrc} alt="" className="w-full h-full object-cover" onError={() => setAvatarBroken(true)} />
                 ) : (
                   <span className="text-2xl font-black text-white">{user.name?.charAt(0)?.toUpperCase()}</span>
                 )}

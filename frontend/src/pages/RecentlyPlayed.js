@@ -4,6 +4,7 @@ import { getRecentlyPlayedApi, getMyFavoritesApi, toggleSongFavoriteApi } from '
 import { Clock, Music, Heart } from 'lucide-react';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { formatTimeCentral } from '../utils/time';
 
 export default function RecentlyPlayed() {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ export default function RecentlyPlayed() {
                   <p className="text-xs text-[#a1a1aa]">{s.artist}</p>
                 </div>
                 <span className="text-[10px] text-[#71717a] font-mono flex-shrink-0 hidden sm:inline">
-                  {s.played_at ? new Date(s.played_at).toLocaleTimeString() : ''}
+                  {s.played_at ? formatTimeCentral(s.played_at) : ''}
                 </span>
                 {user && s.song_id ? (
                   <button

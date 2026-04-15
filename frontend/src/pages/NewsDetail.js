@@ -4,6 +4,7 @@ import { getNewsDetailApi } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ArrowLeft } from 'lucide-react';
+import { formatDateCentral } from '../utils/time';
 
 export default function NewsDetail() {
   const { id } = useParams();
@@ -32,7 +33,7 @@ export default function NewsDetail() {
             )}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4">
               <span className="text-[11px] font-bold text-[#00F0FF] tracking-[2px]">{article.category?.toUpperCase()}</span>
-              <span className="text-xs text-[#71717a]">{new Date(article.created_at).toLocaleDateString()}</span>
+              <span className="text-xs text-[#71717a]">{formatDateCentral(article.created_at)}</span>
               <span className="text-xs text-[#71717a]">By {article.author_name}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-6 font-display" data-testid="news-detail-title">{article.title}</h1>

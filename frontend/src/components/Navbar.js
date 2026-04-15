@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mediaUrl } from '../services/api';
@@ -11,6 +11,11 @@ export default function WebNavBar() {
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [avatarBroken, setAvatarBroken] = useState(false);
+
+  useEffect(() => {
+    setAvatarBroken(false);
+  }, [user?.avatar_url, user?.updated_at]);
 
   const links = MAIN_NAV_LINKS;
 
@@ -53,8 +58,13 @@ export default function WebNavBar() {
               </Link>
             ) : (
               <button onClick={() => setProfileOpen(true)} data-testid="nav-profile" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                {user.avatar_url ? (
-                  <img src={mediaUrl(user.avatar_url)} alt="" className="w-8 h-8 rounded-full object-cover border border-[rgba(255,255,255,0.15)]" />
+                {user.avatar_url && !avatarBroken ? (
+                  <img
+                    src={mediaUrl(user.avatar_url, user.updated_at || user.user_id)}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover border border-[rgba(255,255,255,0.15)]"
+                    onError={() => setAvatarBroken(true)}
+                  />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-[#FF007F] flex items-center justify-center">
                     <span className="text-white font-extrabold text-sm">{user.name?.charAt(0)}</span>

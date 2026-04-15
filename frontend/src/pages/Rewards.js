@@ -5,6 +5,7 @@ import { getRewardsApi, getMyPointsApi, getMyHistoryApi, getLeaderboardApi, dail
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Gift, Star, Zap, MessageCircle, CheckCircle, Music, Trophy } from 'lucide-react';
+import { formatDateCentral } from '../utils/time';
 
 const ICONS = { megaphone: Zap, flash: Zap, star: Star, 'shield-checkmark': CheckCircle, ticket: Gift, people: Trophy };
 
@@ -163,7 +164,7 @@ export default function Rewards() {
                 <div key={tx.transaction_id} className="flex items-center justify-between bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
                   <div>
                     <p className="text-sm text-white">{tx.description}</p>
-                    <p className="text-xs text-[#71717a] mt-0.5">{new Date(tx.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-[#71717a] mt-0.5">{formatDateCentral(tx.created_at)}</p>
                   </div>
                   <span className={`text-lg font-extrabold ${tx.points > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {tx.points > 0 ? '+' : ''}{tx.points}

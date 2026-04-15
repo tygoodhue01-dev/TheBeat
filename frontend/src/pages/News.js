@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getNewsApi } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { formatDateCentral } from '../utils/time';
 
 const CATEGORIES = ['all', 'music', 'events', 'local', 'contests'];
 
@@ -50,7 +51,7 @@ export default function News() {
                 <div className="absolute inset-0 bg-black/45 rounded-xl" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-7">
                   <span className="text-[11px] font-bold text-[#00F0FF] tracking-[2px]">{news[0].category?.toUpperCase()}</span>
-                  <span className="text-[11px] text-[#71717a] ml-4">{new Date(news[0].created_at).toLocaleDateString()}</span>
+                  <span className="text-[11px] text-[#71717a] ml-4">{formatDateCentral(news[0].created_at)}</span>
                   <h3 className="text-[20px] sm:text-[28px] font-extrabold text-white mt-1.5 group-hover:text-[#FF007F] transition-colors">{news[0].title}</h3>
                   <p className="text-sm text-white/70 mt-2 leading-5">{news[0].summary}</p>
                   <p className="text-xs text-[#71717a] mt-2">By {news[0].author_name}</p>
@@ -68,7 +69,7 @@ export default function News() {
                 <div className="p-4">
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-[10px] font-bold text-[#00F0FF] tracking-[2px]">{a.category?.toUpperCase()}</span>
-                    <span className="text-[10px] text-[#71717a]">{new Date(a.created_at).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-[#71717a]">{formatDateCentral(a.created_at)}</span>
                   </div>
                   <h4 className="text-base font-bold text-white group-hover:text-[#FF007F] transition-colors">{a.title}</h4>
                   <p className="text-xs text-[#a1a1aa] mt-2 leading-5 line-clamp-2">{a.summary}</p>
