@@ -10,23 +10,45 @@ import {
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_INDEX = {
+  sunday: 0, sun: 0,
+  monday: 1, mon: 1,
+  tuesday: 2, tue: 2, tues: 2,
+  wednesday: 3, wed: 3,
+  thursday: 4, thu: 4, thurs: 4,
+  friday: 5, fri: 5,
+  saturday: 6, sat: 6
+};
+
+function normalizeDayIndex(dayValue) {
+  if (!dayValue || typeof dayValue !== 'string') return null;
+  const normalized = dayValue.trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(DAY_INDEX, normalized) ? DAY_INDEX[normalized] : null;
+}
 
 /** Minutes from midnight for first h:mm AM/PM in the slot string */
 function parseStartMinutes(timeSlot) {
   if (!timeSlot || typeof timeSlot !== 'string') return null;
-  const m = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  const m = timeSlot.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
   if (!m) return null;
   let h = parseInt(m[1], 10);
-  const min = parseInt(m[2], 10);
-  const ap = m[3].toUpperCase();
-  if (ap === 'PM' && h !== 12) h += 12;
-  if (ap === 'AM' && h === 12) h = 0;
+  const min = parseInt(m[2] || '0', 10);
+  const ap = m[3] ? m[3].toUpperCase() : null;
+
+  if (ap) {
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+  } else if (h > 23 || min > 59) {
+    return null;
+  }
+
+  if (h > 23 || min > 59) return null;
   return h * 60 + min;
 }
 
 function formatDisplayTime(timeSlot) {
   if (!timeSlot) return '';
-  const m = timeSlot.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+  const m = timeSlot.match(/(\d{1,2}(?::\d{2})?\s*(?:AM|PM))/i);
   return m ? m[1].replace(/\s+/g, ' ') : timeSlot.split('-')[0]?.trim() || timeSlot;
 }
 
@@ -36,44 +58,35 @@ function getNextShow(schedule) {
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const todayIdx = now.getDay();
+  const nowAbsolute = todayIdx * 1440 + nowMin;
 
-  for (let d = 0; d < 7; d++) {
-    const dayIdx = (todayIdx + d) % 7;
-    const dayName = DAY_NAMES[dayIdx];
-    const daySlots = schedule
-      .filter(s => s.day_of_week === dayName)
-      .map(s => ({ ...s, startMin: parseStartMinutes(s.time_slot) }))
-      .sort((a, b) => {
-        const sa = a.startMin ?? 99999;
-        const sb = b.startMin ?? 99999;
-        if (sa !== sb) return sa - sb;
-        return (a.time_slot || '').localeCompare(b.time_slot || '');
-      });
+  const validSlots = schedule
+    .map((s) => ({
+      ...s,
+      dayIdx: normalizeDayIndex(s.day_of_week),
+      startMin: parseStartMinutes(s.time_slot)
+    }))
+    .filter((s) => s.dayIdx !== null && s.startMin !== null && s.show_name);
 
-    for (const slot of daySlots) {
-      if (slot.startMin === null) continue;
-      if (d === 0) {
-        if (slot.startMin > nowMin) {
-          return { showName: slot.show_name, timeLabel: formatDisplayTime(slot.time_slot) };
-        }
-      } else {
-        return { showName: slot.show_name, timeLabel: formatDisplayTime(slot.time_slot) };
-      }
+  if (!validSlots.length) return null;
+
+  let best = null;
+  for (const slot of validSlots) {
+    const slotAbsolute = slot.dayIdx * 1440 + slot.startMin;
+    const delta = slotAbsolute > nowAbsolute
+      ? slotAbsolute - nowAbsolute
+      : (7 * 1440) - (nowAbsolute - slotAbsolute);
+
+    if (!best || delta < best.delta) {
+      best = { slot, delta };
     }
   }
 
-  for (let d = 1; d <= 7; d++) {
-    const dayIdx = (todayIdx + d) % 7;
-    const dayName = DAY_NAMES[dayIdx];
-    const daySlots = schedule
-      .filter(s => s.day_of_week === dayName && parseStartMinutes(s.time_slot) === null)
-      .sort((a, b) => (a.time_slot || '').localeCompare(b.time_slot || ''));
-    if (daySlots.length) {
-      return { showName: daySlots[0].show_name, timeLabel: daySlots[0].time_slot || '' };
-    }
-  }
-
-  return null;
+  if (!best) return null;
+  return {
+    showName: best.slot.show_name,
+    timeLabel: formatDisplayTime(best.slot.time_slot)
+  };
 }
 
 export default function Home() {
