@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { updateProfileApi, uploadAvatarApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi, mediaUrl } from '../services/api';
-import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, Mic2, Headphones, Camera } from 'lucide-react';
+import { updateProfileApi, uploadAvatarApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi, mediaUrl, toggleSongFavoriteApi } from '../services/api';
+import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, Mic2, Headphones, Camera, Trash2 } from 'lucide-react';
+
+function createSongFavoriteId(songTitle, artist) {
+  const raw = `${songTitle || ''}::${artist || ''}`.trim().toLowerCase();
+  return raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'song';
+}
 
 export default function ProfileDrawer({ open, onClose }) {
   const { user, logout, refresh } = useAuth();
@@ -17,6 +22,7 @@ export default function ProfileDrawer({ open, onClose }) {
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
   const [avatarFallbackData, setAvatarFallbackData] = useState(false);
+  const [removingFavoriteId, setRemovingFavoriteId] = useState('');
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -85,6 +91,21 @@ export default function ProfileDrawer({ open, onClose }) {
     logout();
     onClose();
     navigate('/');
+  };
+
+  const removeFavorite = async (fav) => {
+    const songId = createSongFavoriteId(fav?.song_title, fav?.artist);
+    if (!songId || removingFavoriteId) return;
+    setRemovingFavoriteId(songId);
+    try {
+      await toggleSongFavoriteApi(songId, fav.song_title || '', fav.artist || '');
+      const removedKey = createSongFavoriteId(fav.song_title, fav.artist);
+      setFavorites((curr) => curr.filter((x) => createSongFavoriteId(x.song_title, x.artist) !== removedKey));
+    } catch (e) {
+      alert(e.message || 'Could not remove favorite');
+    } finally {
+      setRemovingFavoriteId('');
+    }
   };
 
   return (
@@ -215,7 +236,7 @@ export default function ProfileDrawer({ open, onClose }) {
                 <span className="text-[10px] font-bold text-[#71717a]">{favorites.length}</span>
               </div>
               {visibleFavorites.map((f, i) => (
-                <div key={i} className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)]">
+                <div key={`${f.song_title}-${f.artist}-${i}`} className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)]">
                   <div className="w-6 h-6 rounded-full bg-[rgba(255,0,127,0.15)] flex items-center justify-center mr-2.5">
                     <span className="text-[9px] font-extrabold text-[#FF007F]">{i + 1}</span>
                   </div>
@@ -223,6 +244,16 @@ export default function ProfileDrawer({ open, onClose }) {
                     <p className="text-sm font-semibold text-white truncate">{f.song_title}</p>
                     <p className="text-[10px] text-[#71717a]">{f.artist}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFavorite(f)}
+                    disabled={removingFavoriteId === createSongFavoriteId(f.song_title, f.artist)}
+                    className="ml-auto w-8 h-8 rounded-full bg-white/5 border border-[rgba(255,255,255,0.12)] flex items-center justify-center hover:bg-red-500/10 hover:border-red-400/40 transition-colors disabled:opacity-50"
+                    aria-label="Remove favorite"
+                    title="Remove favorite"
+                  >
+                    <Trash2 size={13} className="text-[#a1a1aa] hover:text-red-300" />
+                  </button>
                 </div>
               ))}
               {favorites.length > 2 && (

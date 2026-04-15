@@ -300,7 +300,7 @@ export default function Home() {
       </section>
 
       {/* ===== WEATHER + NEXT SHOW ===== */}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 flex flex-wrap gap-4 items-stretch">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 flex flex-wrap gap-4 items-stretch justify-center">
         <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-4 sm:py-3.5 flex flex-col sm:flex-row items-center text-center sm:text-left gap-2 sm:gap-3 w-full sm:w-fit" data-testid="weather-widget">
           <Cloud size={24} className="text-[#FFF000] shrink-0" />
           <div>
