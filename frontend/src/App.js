@@ -19,6 +19,14 @@ import Maintenance from './pages/Maintenance';
 
 const BG_SHELL = 'min-h-screen text-white font-body bg-beat-bg bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(255,0,127,0.14),transparent_50%),radial-gradient(ellipse_80%_50%_at_100%_50%,rgba(0,240,255,0.08),transparent_45%),radial-gradient(ellipse_60%_40%_at_0%_80%,rgba(255,240,0,0.06),transparent_40%)]';
 
+function maintenanceModeOn(cfg) {
+  const m = cfg?.maintenance_mode;
+  if (m === true || m === 1) return true;
+  if (m === false || m === 0 || m == null) return false;
+  if (typeof m === 'string') return ['1', 'true', 'yes', 'on'].includes(m.toLowerCase());
+  return false;
+}
+
 function MaintenanceGate({ children }) {
   const location = useLocation();
   const [maintenance, setMaintenance] = useState(null);
@@ -26,9 +34,13 @@ function MaintenanceGate({ children }) {
   useEffect(() => {
     let cancelled = false;
     const load = () => {
-      getStreamConfigApi().then((c) => {
-        if (!cancelled) setMaintenance(!!c.maintenance_mode);
-      });
+      getStreamConfigApi()
+        .then((c) => {
+          if (!cancelled) setMaintenance(maintenanceModeOn(c));
+        })
+        .catch(() => {
+          if (!cancelled) setMaintenance(false);
+        });
     };
     load();
     const iv = setInterval(load, 30000);

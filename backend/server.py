@@ -33,16 +33,44 @@ def _is_production() -> bool:
     return os.environ.get("ENVIRONMENT", os.environ.get("APP_ENV", "")).lower() in ("production", "prod", "live")
 
 
-def _parse_cors_origins() -> List[str]:
-    """Explicit browser origins only. Wildcard + credentials is unsafe and non-compliant."""
+def _cors_middleware_kwargs() -> dict:
+    """
+    CORS for browser + Authorization header. When CORS_ORIGINS is unset:
+    - Development: localhost / 127.0.0.1 / ::1 on any port (regex).
+    - Production: set CORS_ORIGINS (comma-separated) or FRONTEND_URL (single origin).
+    """
     raw = os.environ.get("CORS_ORIGINS", "").strip()
+    frontend_url = os.environ.get("FRONTEND_URL", "").strip().rstrip("/")
     if raw:
-        return [o.strip() for o in raw.split(",") if o.strip()]
+        origins = [o.strip() for o in raw.split(",") if o.strip() and o.strip() != "*"]
+        if any(o.strip() == "*" for o in raw.split(",")):
+            logger.warning("CORS_ORIGINS contains * — wildcard is ignored (use explicit origins with credentials).")
+        return {"allow_origins": origins, "allow_origin_regex": None}
+    if not _is_production():
+        logger.warning(
+            "CORS_ORIGINS is not set (development). Allowing http(s)://localhost, 127.0.0.1, and ::1 on any port."
+        )
+        return {
+            "allow_origins": ["http://127.0.0.1:3000", "http://localhost:3000"],
+            "allow_origin_regex": r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$",
+        }
+    if frontend_url:
+        return {"allow_origins": [frontend_url], "allow_origin_regex": None}
     logger.warning(
-        "CORS_ORIGINS is not set; allowing localhost only. "
-        "Set CORS_ORIGINS to your frontend URL(s), comma-separated, for production."
+        "CORS_ORIGINS and FRONTEND_URL are not set in production. Cross-origin API calls from your frontend "
+        "will fail until you set CORS_ORIGINS (comma-separated) or FRONTEND_URL."
     )
-    return ["http://127.0.0.1:3000", "http://localhost:3000"]
+    return {"allow_origins": [], "allow_origin_regex": None}
+
+
+def _coerce_bool_setting(value, default: bool = False) -> bool:
+    if value is True or value is False:
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in ("1", "true", "yes", "on")
+    if isinstance(value, (int, float)):
+        return value != 0
+    return default
 
 
 def _validate_new_password(password: str) -> None:
@@ -1118,9 +1146,12 @@ async def delete_user(user_id: str, admin: dict = Depends(require_roles("admin")
 # ==================== NEWS ENDPOINTS ====================
 @api_router.get("/news")
 async def list_news(category: str = "", limit: int = 20):
-    query = {"published": True}
+    # Legacy docs may omit `published`; only explicit False is hidden from the public list.
+    visibility = {"published": {"$ne": False}}
     if category:
-        query["category"] = category
+        query = {"$and": [visibility, {"category": category}]}
+    else:
+        query = visibility
     articles = await db.news.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
     return articles
 
@@ -1748,10 +1779,8 @@ async def get_stream_config():
             "maintenance_mode": False,
             "maintenance_message": "",
         }
-    if "maintenance_mode" not in config:
-        config["maintenance_mode"] = False
-    if "maintenance_message" not in config:
-        config["maintenance_message"] = ""
+    config["maintenance_mode"] = _coerce_bool_setting(config.get("maintenance_mode"), False)
+    config["maintenance_message"] = str(config.get("maintenance_message") or "")[:2000]
     return config
 
 @api_router.put("/stream-config")
@@ -1873,7 +1902,8 @@ async def award_points(user_id: str, points: int, description: str, tx_type: str
 # ==================== EVENTS ENDPOINTS ====================
 @api_router.get("/events")
 async def list_events():
-    events = await db.events.find({"active": True}, {"_id": 0}).sort("date", 1).to_list(50)
+    visibility = {"active": {"$ne": False}}
+    events = await db.events.find(visibility, {"_id": 0}).sort("date", 1).to_list(50)
     return events
 
 @api_router.post("/events")
@@ -1913,7 +1943,10 @@ async def delete_event(event_id: str, user: dict = Depends(require_roles("admin"
 # ==================== CONTESTS ENDPOINTS ====================
 @api_router.get("/contests")
 async def list_contests(include_inactive: bool = False):
-    query = {} if include_inactive else {"active": True}
+    if include_inactive:
+        query = {}
+    else:
+        query = {"active": {"$ne": False}}
     contests = await db.contests.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return contests
 
@@ -2239,9 +2272,11 @@ async def subscribe_newsletter(req: NewsletterSubscribeRequest):
 # Include router
 app.include_router(api_router)
 
+_cors = _cors_middleware_kwargs()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_parse_cors_origins(),
+    allow_origins=_cors["allow_origins"],
+    allow_origin_regex=_cors["allow_origin_regex"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],
