@@ -7,7 +7,7 @@ import {
   getNowPlayingApi, getNewsApi, getEventsApi,
   getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, mediaUrl
 } from '../services/api';
-import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, HandHeart } from 'lucide-react';
+import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -265,7 +265,7 @@ export default function Home() {
           className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full"
           data-testid="donate-widget"
         >
-          <HandHeart size={24} className="text-[#FFF000] shrink-0" />
+          <Heart size={24} className="text-[#FFF000] shrink-0" />
           <div>
             <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">SUPPORT THE STATION</div>
             <a
