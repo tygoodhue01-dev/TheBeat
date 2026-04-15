@@ -7,7 +7,7 @@ import {
   getNowPlayingApi, getNewsApi, getEventsApi,
   getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, mediaUrl
 } from '../services/api';
-import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar } from 'lucide-react';
+import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, HandHeart } from 'lucide-react';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -79,6 +79,8 @@ function getNextShow(schedule) {
 export default function Home() {
   const { user } = useAuth();
   const [np, setNp] = useState({ song_title: 'The Beat 515', artist: 'Live Radio', dj_name: 'AutoDJ' });
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState('');
   const [news, setNews] = useState([]);
   const [events, setEvents] = useState([]);
   const [contests, setContests] = useState([]);
@@ -118,6 +120,16 @@ export default function Home() {
     if (navigator.share) {
       navigator.share({ title: 'Now Playing on The Beat 515', text: `Now Playing: ${np.song_title} by ${np.artist}` });
     }
+  };
+
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) {
+      setNewsletterStatus('Please enter an email address.');
+      return;
+    }
+    setNewsletterStatus('Thanks for subscribing!');
+    setNewsletterEmail('');
   };
 
   return (
@@ -221,6 +233,49 @@ export default function Home() {
             )}
           </div>
         </Link>
+        <div
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full"
+          data-testid="newsletter-widget"
+        >
+          <Mail size={24} className="text-[#00F0FF] shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">NEWSLETTER</div>
+            <form className="mt-1.5 flex items-center gap-2" onSubmit={handleNewsletterSubmit}>
+              <input
+                type="email"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                placeholder="Your email"
+                className="bg-[#09090b] border border-[rgba(255,255,255,0.15)] rounded-md px-2.5 py-1.5 text-xs text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(0,240,255,0.45)]"
+                aria-label="Email address for newsletter"
+              />
+              <button
+                type="submit"
+                className="bg-[#00F0FF] text-[#09090b] text-[11px] font-extrabold tracking-[1px] rounded-md px-3 py-1.5 hover:opacity-90 transition-opacity"
+              >
+                SUBSCRIBE
+              </button>
+            </form>
+            {newsletterStatus ? (
+              <p className="text-[11px] text-[#a1a1aa] mt-1">{newsletterStatus}</p>
+            ) : null}
+          </div>
+        </div>
+        <div
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full"
+          data-testid="donate-widget"
+        >
+          <HandHeart size={24} className="text-[#FFF000] shrink-0" />
+          <div>
+            <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">SUPPORT THE STATION</div>
+            <a
+              href="/rewards"
+              className="inline-flex items-center mt-1.5 bg-[#FF007F] rounded-md px-3.5 py-1.5 text-[11px] font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity"
+            >
+              DONATE
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* ===== DJS ===== */}
