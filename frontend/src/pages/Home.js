@@ -10,6 +10,14 @@ import {
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
 import { getCentralNowParts, getMonthDayFromIsoDate } from '../utils/time';
 
+function getSharedAudio() {
+  if (typeof window === 'undefined') return null;
+  if (!window.__THEBEAT_SHARED_AUDIO__) {
+    window.__THEBEAT_SHARED_AUDIO__ = new Audio();
+  }
+  return window.__THEBEAT_SHARED_AUDIO__;
+}
+
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_INDEX = {
   sunday: 0, sun: 0,
@@ -140,6 +148,37 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const shared = getSharedAudio();
+    if (!shared) return undefined;
+    audioRef.current = shared;
+
+    const syncPlaying = () => setPlaying(!shared.paused && !shared.ended);
+    syncPlaying();
+    shared.addEventListener('play', syncPlaying);
+    shared.addEventListener('pause', syncPlaying);
+    shared.addEventListener('ended', syncPlaying);
+
+    return () => {
+      shared.removeEventListener('play', syncPlaying);
+      shared.removeEventListener('pause', syncPlaying);
+      shared.removeEventListener('ended', syncPlaying);
+    };
+  }, []);
+
+  useEffect(() => {
+    const shared = audioRef.current;
+    if (!shared || !streamUrl) return;
+    if (!shared.src) {
+      shared.src = streamUrl;
+      return;
+    }
+    // Avoid switching source mid-play unless it's actually a different URL and currently paused.
+    if (shared.paused && shared.src !== streamUrl) {
+      shared.src = streamUrl;
+    }
+  }, [streamUrl]);
+
+  useEffect(() => {
     setBrokenDjAvatars(new Set());
   }, [djs.length]);
 
@@ -166,11 +205,17 @@ export default function Home() {
   }, [user]);
 
   const togglePlay = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(streamUrl);
+    const shared = audioRef.current || getSharedAudio();
+    if (!shared) return;
+    audioRef.current = shared;
+    if (streamUrl && (!shared.src || (shared.paused && shared.src !== streamUrl))) {
+      shared.src = streamUrl;
     }
-    if (playing) { audioRef.current.pause(); } else { audioRef.current.play().catch(() => {}); }
-    setPlaying(!playing);
+    if (!shared.paused && !shared.ended) {
+      shared.pause();
+    } else {
+      shared.play().catch(() => {});
+    }
   };
 
   const shareSong = () => {
