@@ -76,19 +76,15 @@ function getNextShow(schedule) {
 
   if (!validSlots.length) return null;
 
-  let best = null;
-  for (const slot of validSlots) {
-    const slotAbsolute = slot.dayIdx * 1440 + slot.startMin;
-    const delta = slotAbsolute > nowAbsolute
-      ? slotAbsolute - nowAbsolute
-      : (7 * 1440) - (nowAbsolute - slotAbsolute);
+  // Only show slots that are still ahead in the current schedule window.
+  // If all configured slots are behind "now", return null so UI falls back.
+  const upcoming = validSlots
+    .map((slot) => ({ slot, slotAbsolute: slot.dayIdx * 1440 + slot.startMin }))
+    .filter(({ slotAbsolute }) => slotAbsolute > nowAbsolute)
+    .sort((a, b) => a.slotAbsolute - b.slotAbsolute);
 
-    if (!best || delta < best.delta) {
-      best = { slot, delta };
-    }
-  }
-
-  if (!best) return null;
+  if (!upcoming.length) return null;
+  const best = upcoming[0];
   return {
     showName: best.slot.show_name,
     timeLabel: formatDisplayTime(best.slot.time_slot)
@@ -109,6 +105,7 @@ export default function Home() {
   const [contests, setContests] = useState([]);
   const [podcasts, setPodcasts] = useState([]);
   const [djs, setDjs] = useState([]);
+  const [brokenDjAvatars, setBrokenDjAvatars] = useState(new Set());
   const [djStartIndex, setDjStartIndex] = useState(0);
   const [schedule, setSchedule] = useState([]);
   const [playing, setPlaying] = useState(false);
@@ -141,6 +138,10 @@ export default function Home() {
     const iv = setInterval(() => getNowPlayingApi().then(setNp), 15000);
     return () => clearInterval(iv);
   }, []);
+
+  useEffect(() => {
+    setBrokenDjAvatars(new Set());
+  }, [djs.length]);
 
   useEffect(() => {
     setDjStartIndex(0);
@@ -411,8 +412,13 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {visibleDjs.map(d => (
               <div key={d.user_id} className="bg-[#18181b] rounded-lg p-5 flex flex-col items-center border border-[rgba(255,255,255,0.1)]" data-testid={`dj-card-${d.user_id}`}>
-                {d.avatar_url ? (
-                  <img src={mediaUrl(d.avatar_url)} alt={d.name} className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]" />
+                {d.avatar_url && !brokenDjAvatars.has(d.user_id) ? (
+                  <img
+                    src={d.avatar_data_url || mediaUrl(d.avatar_url, d.updated_at || d.user_id)}
+                    alt={d.name}
+                    className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]"
+                    onError={() => setBrokenDjAvatars((prev) => new Set(prev).add(d.user_id))}
+                  />
                 ) : (
                   <div className="w-16 h-16 rounded-full bg-[#FF007F] flex items-center justify-center mb-3">
                     <span className="text-[28px] font-black text-white">{d.name?.charAt(0)}</span>

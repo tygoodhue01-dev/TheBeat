@@ -1295,6 +1295,7 @@ async def list_djs():
         primary_role, roles = normalize_roles(d.get("role"), d.get("roles"))
         d["role"] = primary_role
         d["roles"] = roles
+        d["avatar_url"] = normalize_avatar_url(d.get("avatar_url"))
     return djs
 
 @api_router.get("/djs/{user_id}")
@@ -1308,6 +1309,7 @@ async def get_dj(user_id: str):
     primary_role, roles = normalize_roles(dj.get("role"), dj.get("roles"))
     dj["role"] = primary_role
     dj["roles"] = roles
+    dj["avatar_url"] = normalize_avatar_url(dj.get("avatar_url"))
     shows = await db.shows.find({"dj_id": user_id}, {"_id": 0}).to_list(20)
     return {**dj, "shows": shows}
 
