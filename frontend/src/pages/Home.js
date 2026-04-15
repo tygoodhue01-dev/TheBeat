@@ -5,7 +5,7 @@ import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import {
   getNowPlayingApi, getNewsApi, getEventsApi,
-  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, mediaUrl
+  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, subscribeNewsletterApi, mediaUrl
 } from '../services/api';
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
 
@@ -94,6 +94,7 @@ export default function Home() {
   const [np, setNp] = useState({ song_title: 'The Beat 515', artist: 'Live Radio', dj_name: 'AutoDJ' });
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('');
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [news, setNews] = useState([]);
   const [events, setEvents] = useState([]);
   const [contests, setContests] = useState([]);
@@ -135,14 +136,24 @@ export default function Home() {
     }
   };
 
-  const handleNewsletterSubmit = (e) => {
+  const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
-    if (!newsletterEmail.trim()) {
+    const email = newsletterEmail.trim();
+    if (!email) {
       setNewsletterStatus('Please enter an email address.');
       return;
     }
-    setNewsletterStatus('Thanks for subscribing!');
-    setNewsletterEmail('');
+    setNewsletterLoading(true);
+    setNewsletterStatus('');
+    try {
+      const result = await subscribeNewsletterApi(email);
+      setNewsletterStatus(result?.message || 'Thanks for subscribing!');
+      setNewsletterEmail('');
+    } catch (err) {
+      setNewsletterStatus(err.message || 'Unable to subscribe right now.');
+    } finally {
+      setNewsletterLoading(false);
+    }
   };
 
   return (
@@ -264,9 +275,10 @@ export default function Home() {
               />
               <button
                 type="submit"
-                className="bg-[#00F0FF] text-[#09090b] text-[11px] font-extrabold tracking-[1px] rounded-md px-3 py-1.5 hover:opacity-90 transition-opacity"
+                className="bg-[#00F0FF] text-[#09090b] text-[11px] font-extrabold tracking-[1px] rounded-md px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+                disabled={newsletterLoading}
               >
-                SUBSCRIBE
+                {newsletterLoading ? 'SENDING...' : 'SUBSCRIBE'}
               </button>
             </form>
             {newsletterStatus ? (

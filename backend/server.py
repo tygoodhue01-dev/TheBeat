@@ -16,7 +16,7 @@ import secrets
 import urllib.request
 import asyncio
 from datetime import datetime, timezone, timedelta
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 from bson import ObjectId
 
@@ -259,6 +259,10 @@ class JobApplicationUpdate(BaseModel):
 class EmailRequest(BaseModel):
     subject: str
     message: str
+
+class NewsletterSubscribeRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
 
 class RoleCreate(BaseModel):
     name: str
@@ -1944,6 +1948,84 @@ async def send_email_to_applicant(application_id: str, email_req: EmailRequest, 
         "recipient": app.get("email"),
         "subject": email_req.subject
     }
+
+@api_router.post("/newsletter/subscribe")
+async def subscribe_newsletter(req: NewsletterSubscribeRequest):
+    """Subscribe an email address to MailerLite."""
+    api_key = os.environ.get("MAILERLITE_API_KEY", "").strip()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Newsletter is not configured")
+
+    email = str(req.email).strip().lower()
+    payload = {
+        "email": email,
+        "status": "active",
+    }
+    if req.name:
+        payload["fields"] = {"name": req.name.strip()}
+
+    group_id = os.environ.get("MAILERLITE_GROUP_ID", "").strip()
+    if group_id:
+        payload["groups"] = [group_id]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            response = await client.post(
+                "https://connect.mailerlite.com/api/subscribers",
+                json=payload,
+                headers=headers,
+            )
+
+            # Fallback for accounts still using classic MailerLite API keys.
+            if response.status_code in (401, 403):
+                classic_headers = {
+                    "X-MailerLite-ApiKey": api_key,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+                classic_payload = {
+                    "email": email,
+                    "name": (req.name or "").strip(),
+                    "resubscribe": True,
+                    "autoresponders": True,
+                    "type": "active",
+                }
+                response = await client.post(
+                    "https://api.mailerlite.com/api/v2/subscribers",
+                    json=classic_payload,
+                    headers=classic_headers,
+                )
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Unable to reach newsletter provider")
+
+    logger.info("MailerLite subscribe response status=%s email=%s", response.status_code, email)
+
+    if response.status_code in (200, 201):
+        return {"message": "Subscribed successfully"}
+
+    # MailerLite can return 409 when subscriber already exists.
+    if response.status_code == 409:
+        return {"message": "Already subscribed"}
+
+    error_message = "Failed to subscribe"
+    try:
+        error_data = response.json()
+        if isinstance(error_data, dict):
+            error_message = error_data.get("message") or error_data.get("detail") or error_message
+            if isinstance(error_data.get("errors"), dict):
+                first_error = next(iter(error_data["errors"].values()), None)
+                if isinstance(first_error, list) and first_error:
+                    error_message = str(first_error[0])
+        logger.warning("MailerLite subscribe failed status=%s body=%s", response.status_code, error_data)
+    except ValueError:
+        logger.warning("MailerLite subscribe failed status=%s body=%s", response.status_code, response.text[:400])
+    raise HTTPException(status_code=400, detail=error_message)
 
 # Include router
 app.include_router(api_router)

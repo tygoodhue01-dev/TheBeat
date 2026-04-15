@@ -502,3 +502,15 @@ export async function getDjsApi() {
   if (!res.ok) return [];
   return res.json();
 }
+
+// Newsletter
+export async function subscribeNewsletterApi(email, name = '') {
+  const res = await fetch(`${API_BASE}/newsletter/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
+  return data;
+}
