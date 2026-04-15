@@ -1,13 +1,80 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 import {
   getNowPlayingApi, getNewsApi, getEventsApi,
-  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, mediaUrl
+  getContestsApi, getPodcastsApi, getDjsApi, getStreamConfigApi, getScheduleApi, mediaUrl
 } from '../services/api';
-import { Play, Pause, Share2, Music, Clock, Cloud, Headphones } from 'lucide-react';
+import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar } from 'lucide-react';
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Minutes from midnight for first h:mm AM/PM in the slot string */
+function parseStartMinutes(timeSlot) {
+  if (!timeSlot || typeof timeSlot !== 'string') return null;
+  const m = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+function formatDisplayTime(timeSlot) {
+  if (!timeSlot) return '';
+  const m = timeSlot.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+  return m ? m[1].replace(/\s+/g, ' ') : timeSlot.split('-')[0]?.trim() || timeSlot;
+}
+
+/** Next upcoming slot using local time; compares start time only */
+function getNextShow(schedule) {
+  if (!schedule?.length) return null;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const todayIdx = now.getDay();
+
+  for (let d = 0; d < 7; d++) {
+    const dayIdx = (todayIdx + d) % 7;
+    const dayName = DAY_NAMES[dayIdx];
+    const daySlots = schedule
+      .filter(s => s.day_of_week === dayName)
+      .map(s => ({ ...s, startMin: parseStartMinutes(s.time_slot) }))
+      .sort((a, b) => {
+        const sa = a.startMin ?? 99999;
+        const sb = b.startMin ?? 99999;
+        if (sa !== sb) return sa - sb;
+        return (a.time_slot || '').localeCompare(b.time_slot || '');
+      });
+
+    for (const slot of daySlots) {
+      if (slot.startMin === null) continue;
+      if (d === 0) {
+        if (slot.startMin > nowMin) {
+          return { showName: slot.show_name, timeLabel: formatDisplayTime(slot.time_slot) };
+        }
+      } else {
+        return { showName: slot.show_name, timeLabel: formatDisplayTime(slot.time_slot) };
+      }
+    }
+  }
+
+  for (let d = 1; d <= 7; d++) {
+    const dayIdx = (todayIdx + d) % 7;
+    const dayName = DAY_NAMES[dayIdx];
+    const daySlots = schedule
+      .filter(s => s.day_of_week === dayName && parseStartMinutes(s.time_slot) === null)
+      .sort((a, b) => (a.time_slot || '').localeCompare(b.time_slot || ''));
+    if (daySlots.length) {
+      return { showName: daySlots[0].show_name, timeLabel: daySlots[0].time_slot || '' };
+    }
+  }
+
+  return null;
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -17,18 +84,22 @@ export default function Home() {
   const [contests, setContests] = useState([]);
   const [podcasts, setPodcasts] = useState([]);
   const [djs, setDjs] = useState([]);
+  const [schedule, setSchedule] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
   const audioRef = useRef(null);
+
+  const nextShow = useMemo(() => getNextShow(schedule), [schedule]);
 
   useEffect(() => {
     Promise.all([
       getNowPlayingApi(), getNewsApi(),
       getEventsApi(), getContestsApi(), getPodcastsApi(),
-      getDjsApi(), getStreamConfigApi()
-    ]).then(([npD, n, e, c, p, d, sc]) => {
+      getDjsApi(), getStreamConfigApi(), getScheduleApi()
+    ]).then(([npD, n, e, c, p, d, sc, sch]) => {
       setNp(npD); setNews(n);
       setEvents(e); setContests(c); setPodcasts(p); setDjs(d);
+      setSchedule(Array.isArray(sch) ? sch : []);
       setStreamUrl(sc.stream_url || 'https://das-edge62-live365-dal03.cdnstream.com/a55796');
     });
     const iv = setInterval(() => getNowPlayingApi().then(setNp), 15000);
@@ -115,10 +186,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== WEATHER WIDGET ===== */}
-      <div className="max-w-[1200px] mx-auto px-8 mt-6">
+      {/* ===== WEATHER + NEXT SHOW ===== */}
+      <div className="max-w-[1200px] mx-auto px-8 mt-6 flex flex-wrap gap-4 items-stretch">
         <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit" data-testid="weather-widget">
-          <Cloud size={24} className="text-[#FFF000]" />
+          <Cloud size={24} className="text-[#FFF000] shrink-0" />
           <div>
             <span className="text-lg font-bold">82&deg;F </span>
             <span className="text-[#00F0FF] text-sm font-bold">Des Moines</span>
@@ -126,6 +197,30 @@ export default function Home() {
             <div className="text-xs text-[#71717a]">Feels like 84&deg; &bull; Humidity 40%</div>
           </div>
         </div>
+        <Link
+          to="/schedule"
+          data-testid="next-show-widget"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full hover:border-[rgba(0,240,255,0.22)] transition-colors group"
+        >
+          <Calendar size={24} className="text-[#FF007F] shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">UP NEXT</div>
+            {nextShow ? (
+              <p className="text-sm font-bold text-white mt-1 leading-snug">
+                <span className="text-[#a1a1aa] font-semibold">Next: </span>
+                <span className="text-white">{nextShow.showName}</span>
+                {nextShow.timeLabel ? (
+                  <span className="text-[#00F0FF]"> · {nextShow.timeLabel}</span>
+                ) : null}
+              </p>
+            ) : (
+              <p className="text-sm font-bold text-white mt-1">
+                <span className="text-[#a1a1aa] font-semibold group-hover:text-[#00F0FF] transition-colors">View full schedule</span>
+                <span className="text-[#71717a] font-normal text-xs block mt-0.5">Weekly lineup &amp; show times</span>
+              </p>
+            )}
+          </div>
+        </Link>
       </div>
 
       {/* ===== DJS ===== */}
