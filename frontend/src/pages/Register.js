@@ -29,13 +29,13 @@ export default function Register() {
   return (
     <div data-testid="register-page">
       <WebNavBar />
-      <div className="min-h-[70vh] flex items-center justify-center px-4">
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="font-display text-3xl font-extrabold">Join The Beat</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Join The Beat</h1>
           <p className="text-zinc-500 text-sm mt-2">Create your account and start requesting songs</p>
         </div>
-        <div className="glass rounded-2xl p-8">
+        <div className="glass rounded-2xl p-5 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="register-form">
             <div className="relative">
               <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />

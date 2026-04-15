@@ -47,8 +47,8 @@ export default function Station() {
   return (
     <div data-testid="station-page">
       <WebNavBar />
-      <div className="max-w-[900px] mx-auto px-8 py-8">
-        <h1 className="text-[28px] font-black text-white tracking-[3px] font-display">STATION</h1>
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <h1 className="text-[24px] sm:text-[28px] font-black text-white tracking-[3px] font-display">STATION</h1>
         <p className="text-sm text-[#a1a1aa] mt-1 mb-6">About us, careers, and contact in one place.</p>
 
         <div className="flex flex-wrap gap-2 mb-10 sticky top-[52px] z-10 bg-[#09090b]/95 py-2 -mx-2 px-2 border-b border-[rgba(255,255,255,0.06)]">
@@ -75,7 +75,7 @@ export default function Station() {
               { icon: Users, color: '#FFF000', title: 'Our Community', text: "We're more than a radio station; we're a community. Through our rewards program, live events, and interactive request line, we keep listeners engaged and give back to the community that supports us." },
               { icon: Heart, color: '#ef4444', title: 'Our Mission', text: 'To deliver the best Top 40 music experience while championing local artists, supporting community events, and creating meaningful connections through the power of music.' },
             ].map((s) => (
-              <div key={s.title} className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)]">
+              <div key={s.title} className="bg-[#18181b] rounded-xl p-4 sm:p-6 border border-[rgba(255,255,255,0.1)]">
                 <div className="flex items-center gap-3 mb-3">
                   <s.icon size={20} style={{ color: s.color }} />
                   <h3 className="font-display font-bold text-lg">{s.title}</h3>
@@ -99,7 +99,7 @@ export default function Station() {
               <p className="text-[#71717a]">Thank you for your interest. We&apos;ll review your application and get back to you soon.</p>
             </div>
           ) : (
-            <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)]">
+            <div className="bg-[#18181b] rounded-xl p-4 sm:p-6 border border-[rgba(255,255,255,0.1)]">
               <form onSubmit={handleSubmit} className="space-y-3" data-testid="careers-form">
                 <select
                   value={form.position}
@@ -166,7 +166,7 @@ export default function Station() {
         <section ref={contactRef} id="contact" className="scroll-mt-24">
           <h2 className="text-xl font-black text-white tracking-[2px] font-display mb-2">CONTACT</h2>
           <p className="text-sm text-[#a1a1aa] mb-6">Get in touch with The Beat 515</p>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { icon: Radio, color: '#FF007F', bg: 'rgba(255,0,127,0.1)', title: 'Studio Line', sub: 'Call in during live shows', val: '(515) 515-BEAT' },
               { icon: Mail, color: '#00F0FF', bg: 'rgba(0,240,255,0.1)', title: 'Email', sub: 'General inquiries', val: 'info@thebeat515.com' },

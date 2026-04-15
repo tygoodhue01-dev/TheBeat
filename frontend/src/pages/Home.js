@@ -161,7 +161,7 @@ export default function Home() {
       <WebNavBar />
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative h-[420px] overflow-hidden" data-testid="hero-section">
+      <section className="relative min-h-[520px] sm:min-h-[460px] lg:h-[420px] overflow-hidden" data-testid="hero-section">
         {/* Background gradient + visual */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#09090b] via-[#1a0a1a] to-[#09090b]" />
         <div className="absolute inset-0" style={{
@@ -175,39 +175,39 @@ export default function Home() {
         }} />
         <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FF007F] via-[#00F0FF] to-[#FFF000]" />
 
-        <div className="absolute inset-0 max-w-[1200px] mx-auto w-full flex items-center justify-between px-8">
+        <div className="absolute inset-0 max-w-[1200px] mx-auto w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-8 sm:py-0">
           {/* Left side */}
           <div className="flex-1" data-testid="hero-left">
             <div className="inline-flex items-center bg-[rgba(255,240,0,0.18)] px-3.5 py-1.5 rounded-full mb-4">
               <div className="w-2 h-2 rounded-full bg-[#FFF000] mr-1.5 animate-pulse" />
               <span className="text-[11px] font-extrabold text-[#FFF000] tracking-[3px]">ON AIR NOW</span>
             </div>
-            <h1 className="text-[48px] font-black text-white tracking-[-1px] leading-tight" data-testid="hero-now-playing-title">
+            <h1 className="text-[34px] sm:text-[42px] lg:text-[48px] font-black text-white tracking-[-1px] leading-tight" data-testid="hero-now-playing-title">
               {(!np.song_title || np.song_title.toLowerCase() === 'unknown') ? 'The Beat 515' : np.song_title}
             </h1>
-            <p className="text-[22px] text-[#a1a1aa] mt-1" data-testid="now-playing-artist">
+            <p className="text-[18px] sm:text-[20px] lg:text-[22px] text-[#a1a1aa] mt-1" data-testid="now-playing-artist">
               {(!np.song_title || np.song_title.toLowerCase() === 'unknown') ? 'Now Streaming Live' : np.artist}
             </p>
             <p className="text-sm text-[#71717a] mt-2 mb-6">
               {(!np.song_title || np.song_title.toLowerCase() === 'unknown') ? 'Tune in for the hottest hits' : `with ${np.dj_name || 'AutoDJ'}`}
             </p>
 
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <button onClick={togglePlay} data-testid="play-pause-btn"
-                className="flex items-center gap-2 bg-[#FF007F] rounded-full px-7 py-3.5 text-[13px] font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity">
+                className="flex items-center gap-2 bg-[#FF007F] rounded-full px-5 sm:px-7 py-3 text-[12px] sm:text-[13px] font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity">
                 {playing ? <Pause size={16} /> : <Play size={16} />}
                 {playing ? 'PAUSE' : 'LISTEN LIVE'}
               </button>
               <button onClick={shareSong} data-testid="share-btn"
-                className="flex items-center gap-2 bg-transparent border border-[rgba(0,240,255,0.3)] rounded-full px-5 py-3.5 text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(0,240,255,0.1)] transition-colors">
+                className="flex items-center gap-2 bg-transparent border border-[rgba(0,240,255,0.3)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(0,240,255,0.1)] transition-colors">
                 <Share2 size={14} /> SHARE
               </button>
               <Link to="/requests" data-testid="hero-request-btn"
-                className="flex items-center gap-2 bg-transparent border border-[rgba(255,0,127,0.4)] rounded-full px-5 py-3.5 text-[12px] font-bold text-[#FF007F] tracking-[1px] hover:bg-[rgba(255,0,127,0.1)] transition-colors">
+                className="flex items-center gap-2 bg-transparent border border-[rgba(255,0,127,0.4)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#FF007F] tracking-[1px] hover:bg-[rgba(255,0,127,0.1)] transition-colors">
                 <Music size={14} /> REQUEST A SONG
               </Link>
               <Link to="/recently-played" data-testid="hero-recently-played"
-                className="flex items-center gap-2 bg-[rgba(255,255,255,0.05)] rounded-full px-5 py-3.5 text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(255,255,255,0.1)] transition-colors">
+                className="flex items-center gap-2 bg-[rgba(255,255,255,0.05)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(255,255,255,0.1)] transition-colors">
                 <Clock size={14} /> Recently Played
               </Link>
             </div>
@@ -223,8 +223,8 @@ export default function Home() {
       </section>
 
       {/* ===== WEATHER + NEXT SHOW ===== */}
-      <div className="max-w-[1200px] mx-auto px-8 mt-6 flex flex-wrap gap-4 items-stretch">
-        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit" data-testid="weather-widget">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 flex flex-wrap gap-4 items-stretch">
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit" data-testid="weather-widget">
           <Cloud size={24} className="text-[#FFF000] shrink-0" />
           <div>
             <span className="text-lg font-bold">82&deg;F </span>
@@ -236,7 +236,7 @@ export default function Home() {
         <Link
           to="/schedule"
           data-testid="next-show-widget"
-          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full hover:border-[rgba(0,240,255,0.22)] transition-colors group"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit max-w-full hover:border-[rgba(0,240,255,0.22)] transition-colors group"
         >
           <Calendar size={24} className="text-[#FF007F] shrink-0" />
           <div className="min-w-0">
@@ -258,24 +258,24 @@ export default function Home() {
           </div>
         </Link>
         <div
-          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit max-w-full"
           data-testid="newsletter-widget"
         >
           <Mail size={24} className="text-[#00F0FF] shrink-0" />
           <div className="min-w-0">
             <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">NEWSLETTER</div>
-            <form className="mt-1.5 flex items-center gap-2" onSubmit={handleNewsletterSubmit}>
+            <form className="mt-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2" onSubmit={handleNewsletterSubmit}>
               <input
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Your email"
-                className="bg-[#09090b] border border-[rgba(255,255,255,0.15)] rounded-md px-2.5 py-1.5 text-xs text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(0,240,255,0.45)]"
+                className="bg-[#09090b] border border-[rgba(255,255,255,0.15)] rounded-md px-2.5 py-1.5 text-xs text-white placeholder:text-[#71717a] focus:outline-none focus:border-[rgba(0,240,255,0.45)] w-full sm:w-auto"
                 aria-label="Email address for newsletter"
               />
               <button
                 type="submit"
-                className="bg-[#00F0FF] text-[#09090b] text-[11px] font-extrabold tracking-[1px] rounded-md px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="bg-[#00F0FF] text-[#09090b] text-[11px] font-extrabold tracking-[1px] rounded-md px-3 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50 w-full sm:w-auto"
                 disabled={newsletterLoading}
               >
                 {newsletterLoading ? 'SENDING...' : 'SUBSCRIBE'}
@@ -287,7 +287,7 @@ export default function Home() {
           </div>
         </div>
         <div
-          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-fit max-w-full"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit max-w-full"
           data-testid="donate-widget"
         >
           <Heart size={24} className="text-[#FFF000] shrink-0" />
@@ -305,14 +305,14 @@ export default function Home() {
 
       {/* ===== DJS ===== */}
       {djs.length > 0 && (
-        <section className="max-w-[1200px] mx-auto px-8 mt-12" data-testid="shows-section">
+        <section className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-12" data-testid="shows-section">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">DJS</h2>
             <span className="text-[13px] text-[#71717a]">Meet your on-air talent</span>
           </div>
-          <div className="flex flex-wrap gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {djs.map(d => (
-              <div key={d.user_id} className="w-[23%] min-w-[200px] bg-[#18181b] rounded-lg p-5 flex flex-col items-center border border-[rgba(255,255,255,0.1)]" data-testid={`dj-card-${d.user_id}`}>
+              <div key={d.user_id} className="bg-[#18181b] rounded-lg p-5 flex flex-col items-center border border-[rgba(255,255,255,0.1)]" data-testid={`dj-card-${d.user_id}`}>
                 {d.avatar_url ? (
                   <img src={mediaUrl(d.avatar_url)} alt={d.name} className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]" />
                 ) : (
@@ -330,7 +330,7 @@ export default function Home() {
       )}
 
       {/* ===== NEWS + SIDEBAR ===== */}
-      <div className="max-w-[1200px] mx-auto px-8 mt-12 flex flex-col lg:flex-row gap-8">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-12 flex flex-col lg:flex-row gap-8">
         {/* Main: News */}
         <div className="flex-[2]">
           <div className="flex items-end justify-between mb-6">
@@ -356,10 +356,10 @@ export default function Home() {
           )}
 
           {/* News grid */}
-          <div className="flex gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {news.slice(1, 4).map(a => (
               <Link key={a.news_id} to={`/news/${a.news_id}`}
-                className="flex-1 bg-[#18181b] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.1)] group" data-testid={`news-card-${a.news_id}`}>
+                className="bg-[#18181b] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.1)] group" data-testid={`news-card-${a.news_id}`}>
                 {a.image_url && (
                   <img src={a.image_url} alt={a.title} className="w-full h-[120px] object-cover" />
                 )}
@@ -418,16 +418,16 @@ export default function Home() {
 
       {/* ===== PODCASTS & SHOWS ===== */}
       {podcasts.length > 0 && (
-        <section className="max-w-[1200px] mx-auto px-8 mt-12" data-testid="podcasts-section">
+        <section className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-12" data-testid="podcasts-section">
           <div className="flex items-end justify-between mb-6">
             <div>
               <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">PODCASTS & SHOWS</h2>
               <p className="text-[13px] text-[#71717a] mt-1">Catch up on what you missed</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {podcasts.map(p => (
-              <div key={p.podcast_id} className="w-[23%] min-w-[200px] bg-[#18181b] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.1)]" data-testid={`podcast-${p.podcast_id}`}>
+              <div key={p.podcast_id} className="bg-[#18181b] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.1)]" data-testid={`podcast-${p.podcast_id}`}>
                 {p.image_url ? (
                   <img src={p.image_url} alt={p.title} className="w-full h-[130px] object-cover" />
                 ) : (

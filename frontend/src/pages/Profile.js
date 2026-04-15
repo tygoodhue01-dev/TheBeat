@@ -21,7 +21,7 @@ export default function Profile() {
   return (
     <div data-testid="profile-page">
       <WebNavBar />
-      <div className="max-w-[600px] mx-auto px-8 py-16 text-center text-[#71717a]">
+      <div className="max-w-[600px] mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center text-[#71717a]">
         Redirecting...
       </div>
       <Footer />

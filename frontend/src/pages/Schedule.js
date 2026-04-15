@@ -17,8 +17,8 @@ export default function Schedule() {
   return (
     <div data-testid="schedule-page">
       <WebNavBar />
-      <div className="max-w-[1200px] mx-auto px-8 pt-8">
-        <h1 className="text-[28px] font-black text-white tracking-[3px] font-display">SCHEDULE</h1>
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+        <h1 className="text-[24px] sm:text-[28px] font-black text-white tracking-[3px] font-display">SCHEDULE</h1>
         <p className="text-sm text-[#a1a1aa] mt-1">Weekly programming for The Beat 515</p>
 
         {loading ? (
@@ -33,8 +33,8 @@ export default function Schedule() {
                   <h3 className="text-sm font-bold text-[#00F0FF]">{day}</h3>
                 </div>
                 {grouped[day].map(s => (
-                  <div key={s.schedule_id} className="px-5 py-3 flex items-center gap-4 border-b border-[rgba(255,255,255,0.05)] last:border-0 hover:bg-white/[0.02] transition-colors">
-                    <div className="flex items-center gap-2 text-xs text-[#71717a] w-40 flex-shrink-0">
+                  <div key={s.schedule_id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-[rgba(255,255,255,0.05)] last:border-0 hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-2 text-xs text-[#71717a] sm:w-40 flex-shrink-0">
                       <Clock size={12} />
                       <span className="font-mono">{s.time_slot}</span>
                     </div>

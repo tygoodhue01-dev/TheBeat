@@ -721,9 +721,9 @@ export default function Admin() {
   return (
     <div data-testid="admin-page">
       <WebNavBar />
-      <div className="flex min-h-[calc(100vh-52px)]">
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-52px)]">
         {/* Sidebar */}
-        <div className="w-[240px] bg-[#0d0d0f] border-r border-[rgba(255,255,255,0.1)] pt-6 px-4 flex-shrink-0" data-testid="admin-sidebar">
+        <div className="w-full lg:w-[240px] bg-[#0d0d0f] border-b lg:border-b-0 lg:border-r border-[rgba(255,255,255,0.1)] pt-4 lg:pt-6 px-3 lg:px-4 flex-shrink-0 overflow-x-auto" data-testid="admin-sidebar">
           <div className="flex items-center gap-2.5 px-2 mb-6">
             <Shield size={18} className="text-[#FF007F]" />
             <span className="text-base font-extrabold text-white tracking-[1px]">Dashboard</span>
@@ -735,12 +735,12 @@ export default function Admin() {
                   <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">{group.label}</span>
                 </div>
               )}
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 lg:space-y-0.5 flex lg:block gap-1.5 lg:gap-0 pb-1 lg:pb-0 min-w-max lg:min-w-0">
                 {group.items.map(s => (
                   <button key={s.key} type="button" onClick={() => setTab(s.key)} data-testid={`admin-tab-${s.key}`}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-0.5 text-left transition-colors ${tab===s.key?'bg-[rgba(255,0,127,0.1)]':''}`}>
+                    className={`w-auto lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2.5 lg:py-3 rounded-lg mb-0.5 text-left transition-colors whitespace-nowrap ${tab===s.key?'bg-[rgba(255,0,127,0.1)]':''}`}>
                     <s.icon size={16} className={tab===s.key?'text-[#FF007F]':'text-[#71717a]'} />
-                    <span className={`text-sm flex-1 ${tab===s.key?'text-white font-semibold':'text-[#71717a]'}`}>{s.label}</span>
+                    <span className={`text-xs lg:text-sm flex-1 ${tab===s.key?'text-white font-semibold':'text-[#71717a]'}`}>{s.label}</span>
                     {s.showPendingBadge && pendingCount > 0 && (
                       <span className="bg-[#FF007F] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">{pendingCount}</span>
                     )}
@@ -756,7 +756,7 @@ export default function Admin() {
         </div>
 
         {/* Main content */}
-        <div className="flex-1 p-8 max-w-[1000px]">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1000px]">
           {(panels[tab] || renderOverview)()}
         </div>
       </div>

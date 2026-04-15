@@ -28,13 +28,13 @@ export default function Login() {
   return (
     <div data-testid="login-page">
       <WebNavBar />
-      <div className="min-h-[70vh] flex items-center justify-center px-4">
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="font-display text-3xl font-extrabold">Welcome Back</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Welcome Back</h1>
           <p className="text-zinc-500 text-sm mt-2">Sign in to The Beat 515</p>
         </div>
-        <div className="glass rounded-2xl p-8">
+        <div className="glass rounded-2xl p-5 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
             <div className="relative">
               <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />

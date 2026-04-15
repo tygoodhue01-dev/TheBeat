@@ -58,17 +58,17 @@ export default function Rewards() {
   return (
     <div data-testid="rewards-page">
       <WebNavBar />
-      <div className="max-w-[1200px] mx-auto px-8 pt-8">
-        <h1 className="text-[28px] font-black text-white tracking-[3px] font-display">REWARDS</h1>
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+        <h1 className="text-[24px] sm:text-[28px] font-black text-white tracking-[3px] font-display">REWARDS</h1>
         <p className="text-sm text-[#a1a1aa] mt-1">Earn points. Get perks.</p>
 
         {/* Points Banner */}
-        <div className="flex items-center bg-[#18181b] rounded-xl p-6 mt-6 border border-[rgba(255,240,0,0.2)]" data-testid="points-display">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center bg-[#18181b] rounded-xl p-4 sm:p-6 mt-6 border border-[rgba(255,240,0,0.2)] gap-4 sm:gap-0" data-testid="points-display">
           <div className="flex-1 text-center">
             <p className="text-4xl font-black text-white mt-1">{user ? points.points : 0}</p>
             <p className="text-xs font-bold text-[#FFF000] tracking-[2px]">POINTS</p>
           </div>
-          <div className="w-px h-[50px] bg-[rgba(255,255,255,0.1)] mx-4" />
+          <div className="hidden sm:block w-px h-[50px] bg-[rgba(255,255,255,0.1)] mx-4" />
           <div className="flex-1 text-center">
             <p className="text-xl font-bold text-[#a1a1aa]">{user ? points.lifetime_points : 0}</p>
             <p className="text-xs text-[#71717a] tracking-[1px]">LIFETIME</p>
@@ -80,7 +80,7 @@ export default function Rewards() {
         </div>
 
         {/* How to Earn */}
-        <div className="flex justify-around mt-6 mb-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-6 mb-4">
           {[{ pts: '+10', label: 'Request', icon: Music }, { pts: '+5', label: 'Chat', icon: MessageCircle }, { pts: '+25', label: 'Check-In', icon: CheckCircle }].map(e => (
             <div key={e.label} className="text-center">
               <e.icon size={20} className="mx-auto text-[#FF007F]" />

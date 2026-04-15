@@ -56,8 +56,8 @@ export default function Requests() {
   return (
     <div data-testid="requests-page">
       <WebNavBar />
-      <div className="max-w-[1200px] mx-auto px-8 pt-8">
-        <h1 className="text-[28px] font-black text-white tracking-[3px] font-display">REQUEST LINE</h1>
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+        <h1 className="text-[24px] sm:text-[28px] font-black text-white tracking-[3px] font-display">REQUEST LINE</h1>
         <p className="text-sm text-[#a1a1aa] mt-1">Make your voice heard on The Beat 515</p>
 
         <div className="flex flex-col lg:flex-row gap-8 mt-8">
@@ -92,7 +92,7 @@ export default function Requests() {
               <div className="space-y-2" data-testid="requests-list">
                 {requests.slice(0, 8).map(r => (
                   <div key={r.request_id} className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]" data-testid={`request-item-${r.request_id}`}>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                       <span className="text-base font-bold text-white">{r.song_title}</span>
                       <span className={`text-[9px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full
                         ${r.status === 'approved' ? 'bg-[rgba(34,197,94,0.15)] text-green-400' : 'bg-[rgba(255,240,0,0.15)] text-[#FFF000]'}`}>
@@ -111,7 +111,7 @@ export default function Requests() {
           {/* Live Chat */}
           <div className="flex-1">
             <h3 className="text-xs font-extrabold text-[#00F0FF] tracking-[3px] mb-4">LIVE CHAT</h3>
-            <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] h-[500px] flex flex-col overflow-hidden" data-testid="chat-messages">
+            <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] h-[420px] sm:h-[500px] flex flex-col overflow-hidden" data-testid="chat-messages">
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {chat.map(m => (
                   <div key={m.message_id}

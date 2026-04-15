@@ -5,7 +5,7 @@ import { Instagram, Twitter, Facebook } from 'lucide-react';
 export default function Footer() {
   return (
     <footer className="mt-16 bg-[#18181b] border-t border-[rgba(255,0,127,0.15)] pt-10 pb-6" data-testid="footer">
-      <div className="max-w-[1200px] mx-auto w-full px-8 flex flex-col md:flex-row gap-10">
+      <div className="max-w-[1200px] mx-auto w-full px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="flex-1">
           <div className="text-xl font-black text-white tracking-[2px] font-display">THE BEAT 515</div>
@@ -50,8 +50,8 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto w-full px-8 mt-6 pt-4 border-t border-[rgba(255,255,255,0.1)]">
-        <p className="text-xs text-[#71717a]">&copy; 2026 The Beat 515. All rights reserved.</p>
+      <div className="max-w-[1200px] mx-auto w-full px-4 sm:px-6 lg:px-8 mt-6 pt-4 border-t border-[rgba(255,255,255,0.1)]">
+        <p className="text-xs text-[#71717a] text-center sm:text-left">&copy; 2026 The Beat 515. All rights reserved.</p>
       </div>
     </footer>
   );
