@@ -109,21 +109,18 @@ export default function Home() {
   const [contests, setContests] = useState([]);
   const [podcasts, setPodcasts] = useState([]);
   const [djs, setDjs] = useState([]);
-  const [djPage, setDjPage] = useState(0);
+  const [djStartIndex, setDjStartIndex] = useState(0);
   const [schedule, setSchedule] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
   const audioRef = useRef(null);
 
   const nextShow = useMemo(() => getNextShow(schedule), [schedule]);
-  const djPages = useMemo(() => {
-    if (!Array.isArray(djs) || djs.length === 0) return [];
-    const pages = [];
-    for (let i = 0; i < djs.length; i += 4) pages.push(djs.slice(i, i + 4));
-    return pages;
-  }, [djs]);
-  const hasDjSlideshow = djPages.length > 1;
-  const visibleDjs = djPages[djPage] || djs;
+  const hasDjSlideshow = djs.length > 4;
+  const visibleDjs = useMemo(() => {
+    if (!hasDjSlideshow) return djs;
+    return Array.from({ length: 4 }, (_, i) => djs[(djStartIndex + i) % djs.length]).filter(Boolean);
+  }, [djs, hasDjSlideshow, djStartIndex]);
   const currentSongFavoriteId = useMemo(
     () => createSongFavoriteId(np.song_title, np.artist),
     [np.song_title, np.artist]
@@ -146,16 +143,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setDjPage(0);
+    setDjStartIndex(0);
   }, [djs.length]);
 
   useEffect(() => {
     if (!hasDjSlideshow) return undefined;
     const iv = setInterval(() => {
-      setDjPage((p) => (p + 1) % djPages.length);
+      setDjStartIndex((idx) => (idx + 1) % djs.length);
     }, 6000);
     return () => clearInterval(iv);
-  }, [hasDjSlideshow, djPages.length]);
+  }, [hasDjSlideshow, djs.length]);
 
   useEffect(() => {
     if (!user) {
@@ -392,7 +389,7 @@ export default function Home() {
                 <div className="flex items-center gap-2" data-testid="dj-slideshow-controls">
                   <button
                     type="button"
-                    onClick={() => setDjPage((p) => (p - 1 + djPages.length) % djPages.length)}
+                    onClick={() => setDjStartIndex((idx) => (idx - 1 + djs.length) % djs.length)}
                     className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,0,127,0.45)] transition-colors"
                     aria-label="Previous DJs"
                   >
@@ -400,7 +397,7 @@ export default function Home() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setDjPage((p) => (p + 1) % djPages.length)}
+                    onClick={() => setDjStartIndex((idx) => (idx + 1) % djs.length)}
                     className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,0,127,0.45)] transition-colors"
                     aria-label="Next DJs"
                   >
@@ -429,13 +426,13 @@ export default function Home() {
           </div>
           {hasDjSlideshow ? (
             <div className="flex justify-center gap-1.5 mt-4">
-              {djPages.map((_, idx) => (
+              {djs.map((dj, idx) => (
                 <button
-                  key={`dj-page-${idx}`}
+                  key={`dj-dot-${dj.user_id || idx}`}
                   type="button"
-                  onClick={() => setDjPage(idx)}
-                  className={`w-2 h-2 rounded-full transition-colors ${djPage === idx ? 'bg-[#FF007F]' : 'bg-white/25 hover:bg-white/45'}`}
-                  aria-label={`Go to DJ page ${idx + 1}`}
+                  onClick={() => setDjStartIndex(idx)}
+                  className={`w-2 h-2 rounded-full transition-colors ${djStartIndex === idx ? 'bg-[#FF007F]' : 'bg-white/25 hover:bg-white/45'}`}
+                  aria-label={`Go to DJ ${idx + 1}`}
                 />
               ))}
             </div>
