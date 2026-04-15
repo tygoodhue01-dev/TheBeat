@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { updateProfileApi, uploadAvatarApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi, mediaUrl, toggleSongFavoriteApi } from '../services/api';
+import { updateProfileApi, uploadAvatarApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi, mediaUrl, deleteSongFavoriteApi } from '../services/api';
 import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, Mic2, Headphones, Camera, Trash2 } from 'lucide-react';
 
 function createSongFavoriteId(songTitle, artist) {
@@ -94,13 +94,17 @@ export default function ProfileDrawer({ open, onClose }) {
   };
 
   const removeFavorite = async (fav) => {
-    const songId = createSongFavoriteId(fav?.song_title, fav?.artist);
+    const songId = fav?.song_id || createSongFavoriteId(fav?.song_title, fav?.artist);
+    const songKey = fav?.song_key || createSongFavoriteId(fav?.song_title, fav?.artist);
     if (!songId || removingFavoriteId) return;
-    setRemovingFavoriteId(songId);
+    setRemovingFavoriteId(songKey);
     try {
-      await toggleSongFavoriteApi(songId, fav.song_title || '', fav.artist || '');
+      await deleteSongFavoriteApi(songId, fav.song_title || '', fav.artist || '', songKey);
       const removedKey = createSongFavoriteId(fav.song_title, fav.artist);
-      setFavorites((curr) => curr.filter((x) => createSongFavoriteId(x.song_title, x.artist) !== removedKey));
+      setFavorites((curr) => curr.filter((x) => {
+        const itemKey = createSongFavoriteId(x.song_title, x.artist);
+        return itemKey !== removedKey && x.song_key !== songKey && x.song_id !== songId;
+      }));
     } catch (e) {
       alert(e.message || 'Could not remove favorite');
     } finally {
@@ -247,7 +251,7 @@ export default function ProfileDrawer({ open, onClose }) {
                   <button
                     type="button"
                     onClick={() => removeFavorite(f)}
-                    disabled={removingFavoriteId === createSongFavoriteId(f.song_title, f.artist)}
+                    disabled={removingFavoriteId === (f.song_key || createSongFavoriteId(f.song_title, f.artist))}
                     className="ml-auto w-8 h-8 rounded-full bg-white/5 border border-[rgba(255,255,255,0.12)] flex items-center justify-center hover:bg-red-500/10 hover:border-red-400/40 transition-colors disabled:opacity-50"
                     aria-label="Remove favorite"
                     title="Remove favorite"

@@ -131,6 +131,7 @@ export default function Home() {
     [np.song_title, np.artist]
   );
   const isCurrentFavorite = favoriteSongIds.has(currentSongFavoriteId);
+  const homeUpcomingEvents = useMemo(() => events.slice(0, 4), [events]);
 
   useEffect(() => {
     Promise.all([
@@ -200,7 +201,11 @@ export default function Home() {
       return;
     }
     getMyFavoritesApi().then((items) => {
-      setFavoriteSongIds(new Set(items.filter((i) => i.type === 'song').map((i) => i.song_id)));
+      setFavoriteSongIds(new Set(
+        items
+          .filter((i) => i.type === 'song')
+          .flatMap((i) => [i.song_id, i.song_key, createSongFavoriteId(i.song_title, i.artist)].filter(Boolean))
+      ));
     }).catch(() => setFavoriteSongIds(new Set()));
   }, [user]);
 
@@ -555,8 +560,13 @@ export default function Home() {
           {/* Events */}
           {events.length > 0 && (
             <div className="bg-[#18181b] rounded-xl p-5 border border-[rgba(255,255,255,0.1)]" data-testid="events-sidebar">
-              <h3 className="text-xs font-extrabold text-[#FFF000] tracking-[2px] mb-4">UPCOMING EVENTS</h3>
-              {events.map(e => {
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-extrabold text-[#FFF000] tracking-[2px]">UPCOMING EVENTS</h3>
+                <Link to="/events" className="text-[10px] font-extrabold text-[#00F0FF] tracking-[1px] hover:opacity-80">
+                  VIEW ALL
+                </Link>
+              </div>
+              {homeUpcomingEvents.map(e => {
                 const eventDate = getMonthDayFromIsoDate(e.date);
                 return (
                 <div key={e.event_id} className="flex items-center gap-3 mb-4 last:mb-0" data-testid={`event-${e.event_id}`}>

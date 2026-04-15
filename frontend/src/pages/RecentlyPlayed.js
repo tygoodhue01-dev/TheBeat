@@ -18,7 +18,7 @@ export default function RecentlyPlayed() {
   const [favoriteSongIds, setFavoriteSongIds] = useState(new Set());
   const [updatingFavoriteId, setUpdatingFavoriteId] = useState('');
 
-  useEffect(() => { getRecentlyPlayedApi(50).then(d => { setSongs(d); setLoading(false); }); }, []);
+  useEffect(() => { getRecentlyPlayedApi(10).then(d => { setSongs((Array.isArray(d) ? d : []).slice(0, 10)); setLoading(false); }); }, []);
   useEffect(() => {
     if (!user) {
       setFavoriteSongIds(new Set());
@@ -30,7 +30,7 @@ export default function RecentlyPlayed() {
           .filter((i) => i.type === 'song')
           .flatMap((i) => {
             const stableId = createSongFavoriteId(i.song_title, i.artist);
-            return [i.song_id, stableId].filter(Boolean);
+            return [i.song_id, i.song_key, stableId].filter(Boolean);
           })
       ));
     }).catch(() => setFavoriteSongIds(new Set()));

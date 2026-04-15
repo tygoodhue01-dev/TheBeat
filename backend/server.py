@@ -602,6 +602,28 @@ async def toggle_favorite(song_id: str, song_title: str = "", artist: str = "", 
         await db.favorites.insert_one(fav_doc)
         return {"message": "Added to favorites", "favorited": True}
 
+@api_router.delete("/songs/{song_id}/favorite")
+async def delete_favorite(
+    song_id: str,
+    song_key: str = "",
+    song_title: str = "",
+    artist: str = "",
+    user: dict = Depends(get_current_user)
+):
+    resolved_song_key = (song_key or "").strip() or create_song_key(song_title, artist)
+    result = await db.favorites.delete_many({
+        "user_id": user["user_id"],
+        "$or": [
+            {"song_id": song_id},
+            {"song_key": resolved_song_key}
+        ]
+    })
+    return {
+        "message": "Removed from favorites",
+        "favorited": False,
+        "removed_count": result.deleted_count
+    }
+
 @api_router.get("/users/me/favorites")
 async def get_my_favorites(user: dict = Depends(get_current_user)):
     favorites = await db.favorites.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)

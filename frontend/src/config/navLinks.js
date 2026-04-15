@@ -2,6 +2,7 @@
 export const MAIN_NAV_LINKS = [
   { to: '/', label: 'HOME' },
   { to: '/news', label: 'NEWS' },
+  { to: '/events', label: 'EVENTS' },
   { to: '/station', label: 'STATION' },
   { to: '/requests', label: 'REQUEST LINE' },
   { to: '/schedule', label: 'SCHEDULE' },

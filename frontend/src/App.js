@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Station from './pages/Station';
 import RecentlyPlayed from './pages/RecentlyPlayed';
+import Events from './pages/Events';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/contact" element={<Navigate to="/station#contact" replace />} />
             <Route path="/leaderboard" element={<Navigate to="/rewards?tab=leaderboard" replace />} />
             <Route path="/recently-played" element={<RecentlyPlayed />} />
+            <Route path="/events" element={<Events />} />
           </Routes>
         </div>
       </AuthProvider>

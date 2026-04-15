@@ -405,6 +405,13 @@ export async function toggleSongFavoriteApi(songId, songTitle = '', artist = '')
   if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
   return data;
 }
+export async function deleteSongFavoriteApi(songId, songTitle = '', artist = '', songKey = '') {
+  const q = new URLSearchParams({ song_title: songTitle, artist, song_key: songKey });
+  const res = await authFetch(`${API_BASE}/songs/${songId}/favorite?${q.toString()}`, { method: 'DELETE' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
+  return data;
+}
 export async function getMyStatsApi() {
   const res = await authFetch(`${API_BASE}/users/me/stats`);
   if (!res.ok) return {};
