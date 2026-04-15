@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mediaUrl } from '../services/api';
-import { User } from 'lucide-react';
+import { User, Menu, X } from 'lucide-react';
 import ProfileDrawer from './ProfileDrawer';
 import { MAIN_NAV_LINKS } from '../config/navLinks';
 
@@ -10,6 +10,7 @@ export default function WebNavBar() {
   const { user } = useAuth();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const links = MAIN_NAV_LINKS;
 
@@ -35,7 +36,16 @@ export default function WebNavBar() {
             );})}
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="md:hidden w-9 h-9 rounded-full bg-white/5 flex items-center justify-center"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              data-testid="nav-mobile-menu-toggle"
+              aria-label="Open navigation menu"
+            >
+              {mobileMenuOpen ? <X size={16} className="text-white" /> : <Menu size={16} className="text-white" />}
+            </button>
             {!user ? (
               <Link to="/login" data-testid="nav-login"
                 className="flex items-center gap-1.5 bg-[#FF007F] rounded-full px-3 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity">
@@ -55,24 +65,27 @@ export default function WebNavBar() {
             )}
           </div>
         </div>
-        <div className="md:hidden border-t border-[rgba(255,255,255,0.08)] px-4 sm:px-6 py-2 overflow-x-auto">
-          <div className="flex items-center gap-5 min-w-max">
-            {links.map(l => {
-              const pathOnly = l.to.split('?')[0];
-              const active = location.pathname === pathOnly || (pathOnly === '/' && location.pathname === '/');
-              return (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  data-testid={`nav-mobile-${l.label.toLowerCase().replace(/\s/g, '-')}`}
-                  className={`text-[11px] font-bold tracking-[1.5px] py-1 whitespace-nowrap transition-colors ${active ? 'text-white' : 'text-[#a1a1aa] hover:text-white'}`}
-                >
-                  {l.label}
-                </Link>
-              );
-            })}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[rgba(255,255,255,0.08)] px-4 sm:px-6 py-3 bg-[#0d0d0f]">
+            <div className="grid grid-cols-2 gap-2">
+              {links.map(l => {
+                const pathOnly = l.to.split('?')[0];
+                const active = location.pathname === pathOnly || (pathOnly === '/' && location.pathname === '/');
+                return (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    onClick={() => setMobileMenuOpen(false)}
+                    data-testid={`nav-mobile-${l.label.toLowerCase().replace(/\s/g, '-')}`}
+                    className={`text-[11px] font-bold tracking-[1.2px] py-2.5 px-3 rounded-lg text-center transition-colors border ${active ? 'text-white border-[#FF007F]/45 bg-[rgba(255,0,127,0.12)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)] hover:text-white'}`}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </nav>
 
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />

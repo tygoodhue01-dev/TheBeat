@@ -388,10 +388,23 @@ export async function getMyFavoritesApi() {
   if (!res.ok) return [];
   return res.json();
 }
+export async function toggleSongFavoriteApi(songId, songTitle = '', artist = '') {
+  const q = new URLSearchParams({ song_title: songTitle, artist });
+  const res = await authFetch(`${API_BASE}/songs/${songId}/favorite?${q.toString()}`, { method: 'POST' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
+  return data;
+}
 export async function getMyStatsApi() {
   const res = await authFetch(`${API_BASE}/users/me/stats`);
   if (!res.ok) return {};
   return res.json();
+}
+export async function getFavoriteStatsApi() {
+  const res = await authFetch(`${API_BASE}/admin/favorites/stats`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail || data.message));
+  return data;
 }
 
 // Job Applications

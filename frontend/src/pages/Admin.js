@@ -13,13 +13,13 @@ import {
   getJobApplicationsApi, updateJobApplicationStatusApi, deleteJobApplicationApi, sendEmailToApplicantApi,
   getRolesApi, getPermissionsApi, createRoleApi, updateRoleApi, deleteRoleApi,
   getPushTokensApi, sendPushNotificationApi, getPushHistoryApi,
-  getStreamConfigApi, updateStreamConfigApi
+  getStreamConfigApi, updateStreamConfigApi, getFavoriteStatsApi
 } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import {
   LayoutGrid, Radio, Music, Users, FileText, Newspaper, MessageSquare, Calendar,
   Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
-  Mic
+  Mic, BarChart3, Heart
 } from 'lucide-react';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -57,6 +57,7 @@ export default function Admin() {
   const [permissions, setPermissions] = useState([]);
   const [pushTokens, setPushTokens] = useState({ total: 0 });
   const [pushHistory, setPushHistory] = useState([]);
+  const [favoriteStats, setFavoriteStats] = useState({ top_songs: [], total_favorites: 0, unique_users: 0, favorites_last_24h: 0 });
   const [loading, setLoading] = useState(true);
 
   // Forms
@@ -122,6 +123,9 @@ export default function Admin() {
         setStreamTagline(c.tagline || '');
       });
     }
+    if (tab === 'analytics') {
+      getFavoriteStatsApi().then(setFavoriteStats).catch(() => {});
+    }
   }, [tab]);
 
   const pendingCount = requests.filter(r => r.status === 'pending').length;
@@ -129,6 +133,7 @@ export default function Admin() {
   const sidebarGroups = [
     { label: null, items: [
       { key: 'overview', label: 'Overview', icon: LayoutGrid, roles: ['admin','dj','editor'] },
+      { key: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin','dj'] },
     ]},
     { label: 'Broadcast', items: [
       { key: 'nowplaying', label: 'Stream settings', icon: Radio, roles: ['admin','dj'] },
@@ -234,6 +239,47 @@ export default function Admin() {
       <div className="bg-[rgba(0,240,255,0.05)] rounded-xl p-5 border border-[rgba(0,240,255,0.15)]">
         <h4 className="text-sm font-bold text-[#00F0FF] mb-1">Automatic updates</h4>
         <p className="text-xs text-[#a1a1aa] leading-relaxed">The now playing information is automatically pulled from your stream every 2 minutes. Song title, artist, and album art will update automatically when detected.</p>
+      </div>
+    </div>
+  );
+
+  const renderAnalytics = () => (
+    <div data-testid="admin-analytics">
+      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Favorites Analytics</h2>
+      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Track listener favorite-song activity.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{favoriteStats.total_favorites || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">Total Favorites</p>
+        </div>
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{favoriteStats.unique_users || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">Users Favoriting</p>
+        </div>
+        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)]">
+          <p className="text-3xl font-black text-white">{favoriteStats.favorites_last_24h || 0}</p>
+          <p className="text-xs text-[#71717a] mt-1 font-medium">Last 24 Hours</p>
+        </div>
+      </div>
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2"><Heart size={14} className="text-[#FF007F]" /> Top Favorited Songs</h3>
+        </div>
+        {(favoriteStats.top_songs || []).length === 0 ? (
+          <p className="text-center text-[#71717a] py-8">No favorite-song data yet.</p>
+        ) : (
+          <div className="divide-y divide-white/[0.05]">
+            {favoriteStats.top_songs.map((item, idx) => (
+              <div key={`${item.song_title}-${idx}`} className="px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-white font-semibold truncate">{item.song_title}</p>
+                  <p className="text-xs text-[#a1a1aa] truncate">{item.artist || 'Unknown artist'}</p>
+                </div>
+                <span className="text-xs font-extrabold tracking-[1px] text-[#FF007F] bg-[rgba(255,0,127,0.1)] px-2 py-1 rounded-full">{item.favorite_count} FAVORITES</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -722,6 +768,7 @@ export default function Admin() {
 
   const panels = {
     overview: renderOverview,
+    analytics: renderAnalytics,
     nowplaying: renderNowPlaying,
     requests: renderRequests,
     users: renderUsers,
@@ -754,12 +801,12 @@ export default function Admin() {
                   <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">{group.label}</span>
                 </div>
               )}
-              <div className="space-y-0.5 lg:space-y-0.5 flex lg:block gap-1.5 lg:gap-0 pb-1 lg:pb-0 min-w-max lg:min-w-0">
+              <div className="hidden lg:block space-y-0.5">
                 {group.items.map(s => (
                   <button key={s.key} type="button" onClick={() => setTab(s.key)} data-testid={`admin-tab-${s.key}`}
-                    className={`w-auto lg:w-full flex items-center gap-2 lg:gap-3 px-3 py-2.5 lg:py-3 rounded-lg mb-0.5 text-left transition-colors whitespace-nowrap ${tab===s.key?'bg-[rgba(255,0,127,0.1)]':''}`}>
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-0.5 text-left transition-colors ${tab===s.key?'bg-[rgba(255,0,127,0.1)]':''}`}>
                     <s.icon size={16} className={tab===s.key?'text-[#FF007F]':'text-[#71717a]'} />
-                    <span className={`text-xs lg:text-sm flex-1 ${tab===s.key?'text-white font-semibold':'text-[#71717a]'}`}>{s.label}</span>
+                    <span className={`text-sm flex-1 ${tab===s.key?'text-white font-semibold':'text-[#71717a]'}`}>{s.label}</span>
                     {s.showPendingBadge && pendingCount > 0 && (
                       <span className="bg-[#FF007F] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">{pendingCount}</span>
                     )}
@@ -768,6 +815,19 @@ export default function Admin() {
               </div>
             </div>
           ))}
+          <div className="lg:hidden pb-3">
+            <label className="text-[10px] font-extrabold text-[#71717a] tracking-[2px] block mb-2 px-2">NAVIGATE</label>
+            <select
+              value={tab}
+              onChange={(e) => setTab(e.target.value)}
+              className="w-full bg-[#18181b] border border-[rgba(255,255,255,0.12)] rounded-lg px-3 py-2.5 text-sm text-white"
+              data-testid="admin-tab-select"
+            >
+              {sidebarGroups.flatMap(g => g.items).map(item => (
+                <option key={item.key} value={item.key}>{item.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="h-px bg-[rgba(255,255,255,0.1)] my-4" />
           <Link to="/" className="flex items-center gap-3 px-3 py-3 text-[#71717a] hover:text-white transition-colors">
             <ChevronLeft size={16} /><span className="text-sm">Back to Home</span>

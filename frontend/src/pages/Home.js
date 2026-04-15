@@ -224,7 +224,7 @@ export default function Home() {
 
       {/* ===== WEATHER + NEXT SHOW ===== */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 flex flex-wrap gap-4 items-stretch">
-        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit" data-testid="weather-widget">
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-4 sm:py-3.5 flex flex-col sm:flex-row items-center text-center sm:text-left gap-2 sm:gap-3 w-full sm:w-fit" data-testid="weather-widget">
           <Cloud size={24} className="text-[#FFF000] shrink-0" />
           <div>
             <span className="text-lg font-bold">82&deg;F </span>
@@ -236,7 +236,7 @@ export default function Home() {
         <Link
           to="/schedule"
           data-testid="next-show-widget"
-          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit max-w-full hover:border-[rgba(0,240,255,0.22)] transition-colors group"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-4 sm:py-3.5 flex flex-col sm:flex-row items-center text-center sm:text-left gap-2 sm:gap-3 w-full sm:w-fit max-w-full hover:border-[rgba(0,240,255,0.22)] transition-colors group"
         >
           <Calendar size={24} className="text-[#FF007F] shrink-0" />
           <div className="min-w-0">
@@ -258,13 +258,13 @@ export default function Home() {
           </div>
         </Link>
         <div
-          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit max-w-full"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-4 sm:py-3.5 flex flex-col sm:flex-row items-center text-center sm:text-left gap-2 sm:gap-3 w-full sm:w-fit max-w-full"
           data-testid="newsletter-widget"
         >
           <Mail size={24} className="text-[#00F0FF] shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 w-full sm:w-auto">
             <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">NEWSLETTER</div>
-            <form className="mt-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2" onSubmit={handleNewsletterSubmit}>
+            <form className="mt-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-center" onSubmit={handleNewsletterSubmit}>
               <input
                 type="email"
                 value={newsletterEmail}
@@ -287,7 +287,7 @@ export default function Home() {
           </div>
         </div>
         <div
-          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-3.5 flex items-center gap-3 w-full sm:w-fit max-w-full"
+          className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-4 sm:py-3.5 flex flex-col sm:flex-row items-center text-center sm:text-left gap-2 sm:gap-3 w-full sm:w-fit max-w-full"
           data-testid="donate-widget"
         >
           <Heart size={24} className="text-[#FFF000] shrink-0" />
@@ -295,7 +295,7 @@ export default function Home() {
             <div className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">SUPPORT THE STATION</div>
             <a
               href="/rewards"
-              className="inline-flex items-center mt-1.5 bg-[#FF007F] rounded-md px-3.5 py-1.5 text-[11px] font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity"
+              className="inline-flex items-center justify-center mt-1.5 bg-[#FF007F] rounded-md px-3.5 py-1.5 text-[11px] font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity min-w-[130px]"
             >
               DONATE
             </a>

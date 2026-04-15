@@ -1,14 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { getRecentlyPlayedApi } from '../services/api';
-import { Clock, Music } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { getRecentlyPlayedApi, getMyFavoritesApi, toggleSongFavoriteApi } from '../services/api';
+import { Clock, Music, Heart } from 'lucide-react';
 import WebNavBar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 export default function RecentlyPlayed() {
+  const { user } = useAuth();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [favoriteSongIds, setFavoriteSongIds] = useState(new Set());
+  const [updatingFavoriteId, setUpdatingFavoriteId] = useState('');
 
   useEffect(() => { getRecentlyPlayedApi(50).then(d => { setSongs(d); setLoading(false); }); }, []);
+  useEffect(() => {
+    if (!user) {
+      setFavoriteSongIds(new Set());
+      return;
+    }
+    getMyFavoritesApi().then((items) => {
+      setFavoriteSongIds(new Set(items.filter((i) => i.type === 'song').map((i) => i.song_id)));
+    }).catch(() => setFavoriteSongIds(new Set()));
+  }, [user]);
+
+  const toggleFavorite = async (song) => {
+    if (!user || !song?.song_id || updatingFavoriteId) return;
+    const songId = song.song_id;
+    setUpdatingFavoriteId(songId);
+    const currentlyFav = favoriteSongIds.has(songId);
+    const next = new Set(favoriteSongIds);
+    if (currentlyFav) next.delete(songId); else next.add(songId);
+    setFavoriteSongIds(next);
+    try {
+      const res = await toggleSongFavoriteApi(songId, song.song_title || '', song.artist || '');
+      setFavoriteSongIds((prev) => {
+        const merged = new Set(prev);
+        if (res.favorited) merged.add(songId); else merged.delete(songId);
+        return merged;
+      });
+    } catch (_) {
+      setFavoriteSongIds(favoriteSongIds);
+    } finally {
+      setUpdatingFavoriteId('');
+    }
+  };
 
   return (
     <div data-testid="recently-played-page">
@@ -37,6 +72,21 @@ export default function RecentlyPlayed() {
                 <span className="text-[10px] text-[#71717a] font-mono flex-shrink-0 hidden sm:inline">
                   {s.played_at ? new Date(s.played_at).toLocaleTimeString() : ''}
                 </span>
+                {user && s.song_id ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(s)}
+                    disabled={updatingFavoriteId === s.song_id}
+                    className="w-8 h-8 rounded-full bg-white/5 border border-[rgba(255,255,255,0.1)] flex items-center justify-center hover:bg-white/10 transition-colors disabled:opacity-50"
+                    data-testid={`favorite-toggle-${s.song_id}`}
+                    aria-label="Toggle favorite"
+                  >
+                    <Heart
+                      size={15}
+                      className={favoriteSongIds.has(s.song_id) ? 'text-[#FF007F] fill-[#FF007F]' : 'text-[#71717a]'}
+                    />
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>
