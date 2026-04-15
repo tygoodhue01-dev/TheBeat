@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, NavLink } from 'react-router-dom';
-import { MAIN_NAV_LINKS, MORE_SITE_LINKS } from '../config/navLinks';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   getAdminStatsApi, getAdminUsersApi, getAdminRequestsApi, updateUserApi, deleteUserApi,
   updateRequestStatusApi, deleteRequestApi, createNewsApi, getNewsApi, updateNewsApi, deleteNewsApi,
@@ -18,9 +17,9 @@ import {
 } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import {
-  LayoutGrid, Radio, Music, Users, FileText, Newspaper, MessageSquare, Calendar,
-  Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
-  ExternalLink
+  LayoutGrid, Radio, Music, Newspaper, MessageSquare, Calendar,
+  Shield, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail,
+  Mic
 } from 'lucide-react';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -100,10 +99,10 @@ export default function Admin() {
   }, [user, authLoading, navigate, loadData]);
 
   useEffect(() => {
-    if (tab === 'push') {
+    if (tab === 'administration') {
       Promise.all([getPushTokensApi(), getPushHistoryApi()]).then(([t, h]) => { setPushTokens(t); setPushHistory(h); });
     }
-    if (tab === 'nowplaying') {
+    if (tab === 'broadcast') {
       getStreamConfigApi().then(c => {
         setStreamUrl(c.stream_url || '');
         setStreamStation(c.station_name || '');
@@ -114,23 +113,28 @@ export default function Admin() {
 
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
-  // Sidebar items
-  const sidebar = [
-    { key: 'overview', label: 'Overview', icon: LayoutGrid, roles: ['admin','dj','editor'] },
-    { key: 'nowplaying', label: 'Stream Settings', icon: Radio, roles: ['admin','dj'] },
-    { key: 'requests', label: 'Requests', icon: Music, roles: ['admin','dj'] },
-    { key: 'users', label: 'Users', icon: Users, roles: ['admin'] },
-    { key: 'content', label: 'Publish News', icon: FileText, roles: ['admin','editor'] },
-    { key: 'manage-news', label: 'Manage News', icon: Newspaper, roles: ['admin','editor'] },
-    { key: 'events', label: 'Upcoming Events', icon: Calendar, roles: ['admin'] },
-    { key: 'contests', label: 'Contests & Giveaways', icon: Gift, roles: ['admin'] },
-    { key: 'podcasts-shows', label: 'Podcasts & Shows', icon: Radio, roles: ['admin','dj'] },
-    { key: 'comments', label: 'Comments', icon: MessageSquare, roles: ['admin','editor'] },
-    { key: 'schedule', label: 'Schedule', icon: Calendar, roles: ['admin'] },
-    { key: 'jobs', label: 'Job Applications', icon: Briefcase, roles: ['admin'] },
-    { key: 'roles', label: 'Roles & Permissions', icon: Shield, roles: ['admin'] },
-    { key: 'push', label: 'Push Notifications', icon: Bell, roles: ['admin'] },
-  ].filter(s => s.roles.includes(user?.role));
+  const sidebarGroups = [
+    { label: null, items: [
+      { key: 'overview', label: 'Overview', icon: LayoutGrid, roles: ['admin','dj','editor'] },
+    ]},
+    { label: 'Broadcast', items: [
+      { key: 'broadcast', label: 'Stream & requests', icon: Radio, roles: ['admin','dj'], showPendingBadge: true },
+    ]},
+    { label: 'Content', items: [
+      { key: 'news', label: 'News', icon: Newspaper, roles: ['admin','editor'] },
+      { key: 'events-promos', label: 'Events & promos', icon: Gift, roles: ['admin'] },
+      { key: 'podcasts-shows', label: 'Podcasts & shows', icon: Mic, roles: ['admin','dj'] },
+      { key: 'comments', label: 'Comments', icon: MessageSquare, roles: ['admin','editor'] },
+    ]},
+    { label: 'Station', items: [
+      { key: 'station-ops', label: 'Schedule & jobs', icon: Calendar, roles: ['admin'] },
+    ]},
+    { label: 'Administration', items: [
+      { key: 'administration', label: 'Users & system', icon: Shield, roles: ['admin'] },
+    ]},
+  ]
+    .map(g => ({ ...g, items: g.items.filter(i => i.roles.includes(user?.role)) }))
+    .filter(g => g.items.length > 0);
 
   if (authLoading || loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-[#71717a]">Loading...</div>;
   if (!user || !['admin','dj','editor'].includes(user.role)) return null;
@@ -174,7 +178,7 @@ export default function Admin() {
         ))}
       </div>
       {pendingCount > 0 && (
-        <div className="flex items-center gap-3 bg-[rgba(255,240,0,0.08)] border border-[rgba(255,240,0,0.2)] rounded-xl p-4 mt-4 cursor-pointer" onClick={() => setTab('requests')}>
+        <div className="flex items-center gap-3 bg-[rgba(255,240,0,0.08)] border border-[rgba(255,240,0,0.2)] rounded-xl p-4 mt-4 cursor-pointer" onClick={() => setTab('broadcast')}>
           <Music size={18} className="text-[#FFF000]" />
           <span className="text-sm font-semibold text-[#FFF000]">{pendingCount} request{pendingCount > 1 ? 's' : ''} awaiting approval</span>
         </div>
@@ -182,253 +186,212 @@ export default function Admin() {
     </div>
   );
 
-  const renderNowPlaying = () => (
-    <div>
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Stream Settings</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Configure your radio stream source for automatic metadata updates.</p>
-
-      {/* Stream URL Config */}
-      <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] mb-6">
-        <h3 className="text-lg font-bold text-white mb-1">Stream Configuration</h3>
-        <p className="text-xs text-[#71717a] mb-4">Enter your Live365, Shoutcast, Icecast, or other streaming URL. The system will automatically fetch now playing metadata from this stream.</p>
-        <Label>STREAM URL</Label>
-        <Input value={streamUrl} onChange={e => setStreamUrl(e.target.value)} placeholder="https://..." data-testid="stream-url-input" />
-        <Label>STATION NAME</Label>
-        <Input value={streamStation} onChange={e => setStreamStation(e.target.value)} placeholder="The Beat 515" />
-        <Label>TAGLINE</Label>
-        <Input value={streamTagline} onChange={e => setStreamTagline(e.target.value)} placeholder="Proud. Loud. Local." />
-        <Btn pink className="w-full mt-6" onClick={async () => {
-          try {
-            const data = {};
-            if (streamUrl) data.stream_url = streamUrl;
-            if (streamStation) data.station_name = streamStation;
-            if (streamTagline) data.tagline = streamTagline;
-            await updateStreamConfigApi(data);
-            alert('Stream config saved! The player and metadata polling will now use this URL.');
-          } catch (e) { alert(e.message); }
-        }} data-testid="save-stream-config-btn"><Save size={16} /> SAVE STREAM CONFIG</Btn>
-      </div>
-
-      {/* Info Card */}
-      <div className="bg-[rgba(0,240,255,0.05)] rounded-xl p-5 border border-[rgba(0,240,255,0.15)]">
-        <h4 className="text-sm font-bold text-[#00F0FF] mb-1">Automatic Updates</h4>
-        <p className="text-xs text-[#a1a1aa] leading-relaxed">The now playing information is automatically pulled from your stream every 2 minutes. Song title, artist, and album art will update automatically when detected.</p>
-      </div>
-    </div>
-  );
-
-  const renderRequests = () => (
-    <div data-testid="admin-requests">
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Song Requests</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Manage pending and completed requests.</p>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Song</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Artist</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">By</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {requests.map(r => (
-              <tr key={r.request_id} className="border-b border-white/[0.04]" data-testid={`admin-request-${r.request_id}`}>
-                <td className="px-4 py-3 text-white font-medium">{r.song_title}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{r.artist || '—'}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{r.user_name}</td>
-                <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${r.status==='pending'?'bg-[rgba(255,240,0,0.12)] text-[#FFF000]':'bg-[rgba(0,240,255,0.12)] text-[#00F0FF]'}`}>{r.status==='pending'?'PENDING':'PLAYED'}</span></td>
-                <td className="px-4 py-3 text-right flex gap-1 justify-end">
-                  {r.status === 'pending' && (
-                    <button onClick={async () => { await updateRequestStatusApi(r.request_id, 'approved'); loadData(); }} className="text-xs font-semibold text-[#00F0FF] hover:underline" data-testid={`approve-req-${r.request_id}`}>Played</button>
-                  )}
-                  <button onClick={() => { if (window.confirm(`Delete "${r.song_title}"?`)) { deleteRequestApi(r.request_id).then(loadData); }}} className="text-xs font-semibold text-red-400 hover:underline ml-2" data-testid={`delete-req-${r.request_id}`}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {requests.length === 0 && <p className="text-center text-[#71717a] py-8">No requests</p>}
-      </div>
-    </div>
-  );
-
-  const renderUsers = () => (
-    <div data-testid="admin-users">
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">User Management</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Edit user details, manage roles, or remove accounts.</p>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Email</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Role</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Joined</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.user_id} className="border-b border-white/[0.04]" data-testid={`user-row-${u.user_id}`}>
-                <td className="px-4 py-3 text-white font-medium">{u.name}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{u.email}</td>
-                <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2.5 py-1 rounded-full border ${u.role==='admin'?'border-[#FFF000]/30 text-[#FFF000]':u.role==='dj'?'border-[#FF007F]/30 text-[#FF007F]':u.role==='editor'?'border-[#00F0FF]/30 text-[#00F0FF]':'border-[#71717a]/30 text-[#71717a]'}`}>{u.role?.toUpperCase()}</span></td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditUser({...u})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  {u.user_id !== user.user_id && <button onClick={() => { if (window.confirm(`Delete ${u.name}?`)) deleteUserApi(u.user_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Remove</button>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderContent = () => (
-    <div data-testid="admin-create-news">
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Publish News Article</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Create and publish news articles.</p>
-      <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)]">
-        <Label>TITLE</Label>
-        <Input value={newsForm.title} onChange={e => setNewsForm(p=>({...p,title:e.target.value}))} data-testid="news-title-input" />
-        <Label>SUMMARY</Label>
-        <Input value={newsForm.summary} onChange={e => setNewsForm(p=>({...p,summary:e.target.value}))} />
-        <Label>CONTENT</Label>
-        <Textarea rows={6} value={newsForm.content} onChange={e => setNewsForm(p=>({...p,content:e.target.value}))} data-testid="news-content-input" />
-        <Label>CATEGORY</Label>
-        <div className="flex gap-2 flex-wrap mt-1">
-          {CATS.map(c => (
-            <button key={c} onClick={() => setNewsForm(p=>({...p,category:c}))} className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${newsForm.category===c?'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]':'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}>{c.toUpperCase()}</button>
-          ))}
+  const renderBroadcast = () => (
+    <div className="space-y-12">
+      <div>
+        <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Broadcast</h2>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-8">Stream settings and the song request line.</p>
+        <h3 className="text-lg font-bold text-white mb-4">Stream</h3>
+        <p className="text-sm text-[#a1a1aa] mb-6">Configure your radio stream source for automatic metadata updates.</p>
+        <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] mb-6">
+          <h4 className="text-base font-bold text-white mb-1">Stream configuration</h4>
+          <p className="text-xs text-[#71717a] mb-4">Enter your Live365, Shoutcast, Icecast, or other streaming URL. The system will automatically fetch now playing metadata from this stream.</p>
+          <Label>STREAM URL</Label>
+          <Input value={streamUrl} onChange={e => setStreamUrl(e.target.value)} placeholder="https://..." data-testid="stream-url-input" />
+          <Label>STATION NAME</Label>
+          <Input value={streamStation} onChange={e => setStreamStation(e.target.value)} placeholder="The Beat 515" />
+          <Label>TAGLINE</Label>
+          <Input value={streamTagline} onChange={e => setStreamTagline(e.target.value)} placeholder="Proud. Loud. Local." />
+          <Btn pink className="w-full mt-6" onClick={async () => {
+            try {
+              const data = {};
+              if (streamUrl) data.stream_url = streamUrl;
+              if (streamStation) data.station_name = streamStation;
+              if (streamTagline) data.tagline = streamTagline;
+              await updateStreamConfigApi(data);
+              alert('Stream config saved! The player and metadata polling will now use this URL.');
+            } catch (e) { alert(e.message); }
+          }} data-testid="save-stream-config-btn"><Save size={16} /> SAVE STREAM CONFIG</Btn>
         </div>
-        <Btn pink className="w-full mt-6" onClick={async () => {
-          if (!newsForm.title||!newsForm.content) return alert('Title and content required');
-          try { await createNewsApi(newsForm); setNewsForm({title:'',content:'',category:'general',summary:''}); alert('Published!'); loadData(); } catch(e){ alert(e.message); }
-        }} data-testid="news-create-btn"><Plus size={16} /> PUBLISH ARTICLE</Btn>
-      </div>
-    </div>
-  );
-
-  const renderManageNews = () => (
-    <div>
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Manage News</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">View, edit, or delete published articles.</p>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Category</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Published</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {allNews.map(a => (
-              <tr key={a.news_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white font-medium">{a.title}</td>
-                <td className="px-4 py-3 text-[#00F0FF] text-xs font-bold tracking-[1px]">{a.category?.toUpperCase()}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{new Date(a.created_at).toLocaleDateString()}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditNews({...a})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  <button onClick={() => { if(window.confirm(`Delete "${a.title}"?`)) deleteNewsApi(a.news_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {allNews.length === 0 && <p className="text-center text-[#71717a] py-8">No news articles yet</p>}
-      </div>
-    </div>
-  );
-
-  const renderEvents = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Upcoming Events</h2>
-          <p className="text-sm text-[#a1a1aa] mt-1">Add and manage events shown on the homepage.</p>
+        <div className="bg-[rgba(0,240,255,0.05)] rounded-xl p-5 border border-[rgba(0,240,255,0.15)]">
+          <h4 className="text-sm font-bold text-[#00F0FF] mb-1">Automatic updates</h4>
+          <p className="text-xs text-[#a1a1aa] leading-relaxed">The now playing information is automatically pulled from your stream every 2 minutes. Song title, artist, and album art will update automatically when detected.</p>
         </div>
-        <Btn pink onClick={() => setEditEvent({ title: '', description: '', venue: '', date: '', time: '', image_url: '', ticket_url: '' })}>
-          <Plus size={16} /> ADD EVENT
-        </Btn>
       </div>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Venue</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Date</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {events.map(e => (
-              <tr key={e.event_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white font-medium">{e.title}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{e.venue || '—'}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{e.date || '—'} {e.time ? `at ${e.time}` : ''}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditEvent({ ...e })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  <button onClick={() => { if (window.confirm(`Delete "${e.title}"?`)) deleteEventApi(e.event_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {events.length === 0 && <p className="text-center text-[#71717a] py-8">No events yet</p>}
+      <div data-testid="admin-requests">
+        <h3 className="text-lg font-bold text-white mb-1">Song requests</h3>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Manage pending and completed requests.</p>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Song</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Artist</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">By</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {requests.map(r => (
+                <tr key={r.request_id} className="border-b border-white/[0.04]" data-testid={`admin-request-${r.request_id}`}>
+                  <td className="px-4 py-3 text-white font-medium">{r.song_title}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{r.artist || '—'}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{r.user_name}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${r.status==='pending'?'bg-[rgba(255,240,0,0.12)] text-[#FFF000]':'bg-[rgba(0,240,255,0.12)] text-[#00F0FF]'}`}>{r.status==='pending'?'PENDING':'PLAYED'}</span></td>
+                  <td className="px-4 py-3 text-right flex gap-1 justify-end">
+                    {r.status === 'pending' && (
+                      <button onClick={async () => { await updateRequestStatusApi(r.request_id, 'approved'); loadData(); }} className="text-xs font-semibold text-[#00F0FF] hover:underline" data-testid={`approve-req-${r.request_id}`}>Played</button>
+                    )}
+                    <button onClick={() => { if (window.confirm(`Delete "${r.song_title}"?`)) { deleteRequestApi(r.request_id).then(loadData); }}} className="text-xs font-semibold text-red-400 hover:underline ml-2" data-testid={`delete-req-${r.request_id}`}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {requests.length === 0 && <p className="text-center text-[#71717a] py-8">No requests</p>}
+        </div>
       </div>
     </div>
   );
 
-  const renderContests = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Contests & Giveaways</h2>
-          <p className="text-sm text-[#a1a1aa] mt-1">Add and manage contest promotions shown on the homepage.</p>
-        </div>
-        <Btn pink onClick={() => setEditContest({ title: '', description: '', prize: '', end_date: '', how_to_enter: '', image_url: '' })}>
-          <Plus size={16} /> ADD CONTEST
-        </Btn>
-      </div>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Prize</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">End Date</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {contests.map(c => (
-              <tr key={c.contest_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white font-medium">{c.title}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{c.prize || '—'}</td>
-                <td className="px-4 py-3 text-[#71717a] text-xs">{c.end_date || '—'}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${c.active === false ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
-                    {c.active === false ? 'INACTIVE' : 'ACTIVE'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={async () => {
-                      try {
-                        await updateContestApi(c.contest_id, { active: c.active === false });
-                        loadData();
-                      } catch (err) { alert(err.message); }
-                    }}
-                    className="text-xs text-[#FFF000] font-semibold hover:underline"
-                  >
-                    {c.active === false ? 'Activate' : 'Deactivate'}
-                  </button>
-                  <button onClick={() => setEditContest({ ...c })} className="text-xs text-[#00F0FF] font-semibold hover:underline ml-3">Edit</button>
-                  <button onClick={() => { if (window.confirm(`Delete "${c.title}"?`)) deleteContestApi(c.contest_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
-                </td>
-              </tr>
+  const renderNews = () => (
+    <div className="space-y-12">
+      <div>
+        <h2 className="text-2xl font-extrabold text-white tracking-[1px]">News</h2>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-8">Publish new articles and manage existing posts.</p>
+        <h3 className="text-lg font-bold text-white mb-4">Publish</h3>
+        <div data-testid="admin-create-news" className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)]">
+          <Label>TITLE</Label>
+          <Input value={newsForm.title} onChange={e => setNewsForm(p=>({...p,title:e.target.value}))} data-testid="news-title-input" />
+          <Label>SUMMARY</Label>
+          <Input value={newsForm.summary} onChange={e => setNewsForm(p=>({...p,summary:e.target.value}))} />
+          <Label>CONTENT</Label>
+          <Textarea rows={6} value={newsForm.content} onChange={e => setNewsForm(p=>({...p,content:e.target.value}))} data-testid="news-content-input" />
+          <Label>CATEGORY</Label>
+          <div className="flex gap-2 flex-wrap mt-1">
+            {CATS.map(c => (
+              <button key={c} onClick={() => setNewsForm(p=>({...p,category:c}))} className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${newsForm.category===c?'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]':'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}>{c.toUpperCase()}</button>
             ))}
-          </tbody>
-        </table>
-        {contests.length === 0 && <p className="text-center text-[#71717a] py-8">No contests yet</p>}
+          </div>
+          <Btn pink className="w-full mt-6" onClick={async () => {
+            if (!newsForm.title||!newsForm.content) return alert('Title and content required');
+            try { await createNewsApi(newsForm); setNewsForm({title:'',content:'',category:'general',summary:''}); alert('Published!'); loadData(); } catch(e){ alert(e.message); }
+          }} data-testid="news-create-btn"><Plus size={16} /> PUBLISH ARTICLE</Btn>
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-white mb-4">Published articles</h3>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Category</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Published</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {allNews.map(a => (
+                <tr key={a.news_id} className="border-b border-white/[0.04]">
+                  <td className="px-4 py-3 text-white font-medium">{a.title}</td>
+                  <td className="px-4 py-3 text-[#00F0FF] text-xs font-bold tracking-[1px]">{a.category?.toUpperCase()}</td>
+                  <td className="px-4 py-3 text-[#71717a] text-xs">{new Date(a.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => setEditNews({...a})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                    <button onClick={() => { if(window.confirm(`Delete "${a.title}"?`)) deleteNewsApi(a.news_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {allNews.length === 0 && <p className="text-center text-[#71717a] py-8">No news articles yet</p>}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEventsPromos = () => (
+    <div className="space-y-14">
+      <div>
+        <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Events & promos</h2>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-8">Homepage events and contest giveaways.</p>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-white">Upcoming events</h3>
+          <Btn pink onClick={() => setEditEvent({ title: '', description: '', venue: '', date: '', time: '', image_url: '', ticket_url: '' })}>
+            <Plus size={16} /> ADD EVENT
+          </Btn>
+        </div>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Venue</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Date</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {events.map(e => (
+                <tr key={e.event_id} className="border-b border-white/[0.04]">
+                  <td className="px-4 py-3 text-white font-medium">{e.title}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{e.venue || '—'}</td>
+                  <td className="px-4 py-3 text-[#71717a] text-xs">{e.date || '—'} {e.time ? `at ${e.time}` : ''}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => setEditEvent({ ...e })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                    <button onClick={() => { if (window.confirm(`Delete "${e.title}"?`)) deleteEventApi(e.event_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {events.length === 0 && <p className="text-center text-[#71717a] py-8">No events yet</p>}
+        </div>
+      </div>
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-white">Contests & giveaways</h3>
+          <Btn pink onClick={() => setEditContest({ title: '', description: '', prize: '', end_date: '', how_to_enter: '', image_url: '' })}>
+            <Plus size={16} /> ADD CONTEST
+          </Btn>
+        </div>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Prize</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">End Date</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {contests.map(c => (
+                <tr key={c.contest_id} className="border-b border-white/[0.04]">
+                  <td className="px-4 py-3 text-white font-medium">{c.title}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{c.prize || '—'}</td>
+                  <td className="px-4 py-3 text-[#71717a] text-xs">{c.end_date || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${c.active === false ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                      {c.active === false ? 'INACTIVE' : 'ACTIVE'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await updateContestApi(c.contest_id, { active: c.active === false });
+                          loadData();
+                        } catch (err) { alert(err.message); }
+                      }}
+                      className="text-xs text-[#FFF000] font-semibold hover:underline"
+                    >
+                      {c.active === false ? 'Activate' : 'Deactivate'}
+                    </button>
+                    <button onClick={() => setEditContest({ ...c })} className="text-xs text-[#00F0FF] font-semibold hover:underline ml-3">Edit</button>
+                    <button onClick={() => { if (window.confirm(`Delete "${c.title}"?`)) deleteContestApi(c.contest_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {contests.length === 0 && <p className="text-center text-[#71717a] py-8">No contests yet</p>}
+        </div>
       </div>
     </div>
   );
@@ -547,153 +510,196 @@ export default function Admin() {
     </div>
   );
 
-  const renderSchedule = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div><h2 className="text-2xl font-extrabold text-white tracking-[1px]">Schedule Management</h2><p className="text-sm text-[#a1a1aa] mt-1">Manage the weekly on-air schedule.</p></div>
-        <Btn pink onClick={() => setEditSchedule({ day_of_week:'Monday', time_slot:'', show_name:'', dj_name:'', description:'' })}><Plus size={16} /> ADD TIME SLOT</Btn>
+  const renderStationOps = () => (
+    <div className="space-y-14">
+      <div>
+        <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Schedule & jobs</h2>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-8">On-air schedule and career applications.</p>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-white">Weekly schedule</h3>
+          <Btn pink onClick={() => setEditSchedule({ day_of_week:'Monday', time_slot:'', show_name:'', dj_name:'', description:'' })}><Plus size={16} /> ADD TIME SLOT</Btn>
+        </div>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Day</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Time</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Show</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">DJ</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {scheduleSlots.map(s => (
+                <tr key={s.schedule_id} className="border-b border-white/[0.04]">
+                  <td className="px-4 py-3 text-white">{s.day_of_week}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa] font-mono text-xs">{s.time_slot}</td>
+                  <td className="px-4 py-3 text-white font-medium">{s.show_name}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{s.dj_name}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => setEditSchedule({...s})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                    <button onClick={() => { if(window.confirm(`Delete "${s.show_name}"?`)) deleteScheduleSlotApi(s.schedule_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {scheduleSlots.length === 0 && <p className="text-center text-[#71717a] py-8">No schedule slots yet</p>}
+        </div>
       </div>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Day</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Time</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Show</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">DJ</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {scheduleSlots.map(s => (
-              <tr key={s.schedule_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white">{s.day_of_week}</td>
-                <td className="px-4 py-3 text-[#a1a1aa] font-mono text-xs">{s.time_slot}</td>
-                <td className="px-4 py-3 text-white font-medium">{s.show_name}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{s.dj_name}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => setEditSchedule({...s})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
-                  <button onClick={() => { if(window.confirm(`Delete "${s.show_name}"?`)) deleteScheduleSlotApi(s.schedule_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {scheduleSlots.length === 0 && <p className="text-center text-[#71717a] py-8">No schedule slots yet</p>}
+      <div>
+        <h3 className="text-lg font-bold text-white mb-4">Job applications</h3>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Review and manage applications.</p>
+        <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Position</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Email</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {jobApps.map(a => (
+                <tr key={a.application_id} className="border-b border-white/[0.04]">
+                  <td className="px-4 py-3 text-white">{a.position}</td>
+                  <td className="px-4 py-3 text-white font-medium">{a.name}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{a.email}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${a.status==='approved'?'bg-green-500/10 text-green-400':a.status==='rejected'?'bg-red-500/10 text-red-400':'bg-[rgba(255,240,0,0.12)] text-[#FFF000]'}`}>{a.status.toUpperCase()}</span></td>
+                  <td className="px-4 py-3 text-right flex gap-1 justify-end flex-wrap">
+                    {a.status === 'pending' && (<>
+                      <button onClick={async () => { await updateJobApplicationStatusApi(a.application_id, 'approved'); loadData(); }} className="text-xs text-green-400 font-semibold hover:underline">Approve</button>
+                      <button onClick={async () => { await updateJobApplicationStatusApi(a.application_id, 'rejected'); loadData(); }} className="text-xs text-orange-400 font-semibold hover:underline">Reject</button>
+                    </>)}
+                    <button onClick={() => { setEmailApp(a); setEmailSubject(''); setEmailMessage(''); }} className="text-xs text-[#00F0FF] font-semibold hover:underline">Email</button>
+                    <button onClick={() => { if(window.confirm(`Delete application from ${a.name}?`)) deleteJobApplicationApi(a.application_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {jobApps.length === 0 && <p className="text-center text-[#71717a] py-8">No applications yet</p>}
+        </div>
       </div>
     </div>
   );
 
-  const renderJobs = () => (
-    <div>
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Job Applications</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Review and manage applications.</p>
-      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Position</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Email</th>
-            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
-          </tr></thead>
-          <tbody>
-            {jobApps.map(a => (
-              <tr key={a.application_id} className="border-b border-white/[0.04]">
-                <td className="px-4 py-3 text-white">{a.position}</td>
-                <td className="px-4 py-3 text-white font-medium">{a.name}</td>
-                <td className="px-4 py-3 text-[#a1a1aa]">{a.email}</td>
-                <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${a.status==='approved'?'bg-green-500/10 text-green-400':a.status==='rejected'?'bg-red-500/10 text-red-400':'bg-[rgba(255,240,0,0.12)] text-[#FFF000]'}`}>{a.status.toUpperCase()}</span></td>
-                <td className="px-4 py-3 text-right flex gap-1 justify-end flex-wrap">
-                  {a.status === 'pending' && (<>
-                    <button onClick={async () => { await updateJobApplicationStatusApi(a.application_id, 'approved'); loadData(); }} className="text-xs text-green-400 font-semibold hover:underline">Approve</button>
-                    <button onClick={async () => { await updateJobApplicationStatusApi(a.application_id, 'rejected'); loadData(); }} className="text-xs text-orange-400 font-semibold hover:underline">Reject</button>
-                  </>)}
-                  <button onClick={() => { setEmailApp(a); setEmailSubject(''); setEmailMessage(''); }} className="text-xs text-[#00F0FF] font-semibold hover:underline">Email</button>
-                  <button onClick={() => { if(window.confirm(`Delete application from ${a.name}?`)) deleteJobApplicationApi(a.application_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {jobApps.length === 0 && <p className="text-center text-[#71717a] py-8">No applications yet</p>}
+  const renderAdministration = () => (
+    <div className="space-y-16">
+      <div>
+        <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Users & system</h2>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-8">Accounts, roles, and push notifications.</p>
+        <h3 className="text-lg font-bold text-white mb-4">Users</h3>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Edit user details, manage roles, or remove accounts.</p>
+        <div data-testid="admin-users" className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Email</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Role</th>
+              <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Joined</th>
+              <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+            </tr></thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.user_id} className="border-b border-white/[0.04]" data-testid={`user-row-${u.user_id}`}>
+                  <td className="px-4 py-3 text-white font-medium">{u.name}</td>
+                  <td className="px-4 py-3 text-[#a1a1aa]">{u.email}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] font-extrabold tracking-[1px] px-2.5 py-1 rounded-full border ${u.role==='admin'?'border-[#FFF000]/30 text-[#FFF000]':u.role==='dj'?'border-[#FF007F]/30 text-[#FF007F]':u.role==='editor'?'border-[#00F0FF]/30 text-[#00F0FF]':'border-[#71717a]/30 text-[#71717a]'}`}>{u.role?.toUpperCase()}</span></td>
+                  <td className="px-4 py-3 text-[#71717a] text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => setEditUser({...u})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                    {u.user_id !== user.user_id && <button onClick={() => { if (window.confirm(`Delete ${u.name}?`)) deleteUserApi(u.user_id).then(loadData); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Remove</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
-
-  const renderRoles = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div><h2 className="text-2xl font-extrabold text-white tracking-[1px]">Roles & Permissions</h2><p className="text-sm text-[#a1a1aa] mt-1">Manage user roles and what they can do.</p></div>
-        <Btn pink onClick={() => setNewRole({ name:'', display_name:'', color:'#00f0ff', permissions:[] })}><Plus size={16} /> NEW ROLE</Btn>
-      </div>
-      <div className="space-y-3">
-        {roles.map(r => (
-          <div key={r.role_id} className="bg-[#18181b] rounded-xl p-5 border border-[rgba(255,255,255,0.1)]">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white">{r.display_name}</span>
-                {r.is_system && <span className="text-[9px] font-extrabold text-[#71717a] tracking-[1px] bg-white/5 px-2 py-0.5 rounded">SYSTEM</span>}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-white">Roles & permissions</h3>
+            <p className="text-sm text-[#a1a1aa] mt-1">Manage user roles and what they can do.</p>
+          </div>
+          <Btn pink onClick={() => setNewRole({ name:'', display_name:'', color:'#00f0ff', permissions:[] })}><Plus size={16} /> NEW ROLE</Btn>
+        </div>
+        <div className="space-y-3">
+          {roles.map(r => (
+            <div key={r.role_id} className="bg-[#18181b] rounded-xl p-5 border border-[rgba(255,255,255,0.1)]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white">{r.display_name}</span>
+                  {r.is_system && <span className="text-[9px] font-extrabold text-[#71717a] tracking-[1px] bg-white/5 px-2 py-0.5 rounded">SYSTEM</span>}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setEditRole({...r})} className="p-1.5 hover:bg-white/5 rounded"><Edit3 size={14} className="text-[#00F0FF]" /></button>
+                  {!r.is_system && <button onClick={() => { if(window.confirm(`Delete "${r.display_name}"?`)) deleteRoleApi(r.role_id).then(loadData).catch(e=>alert(e.message)); }} className="p-1.5 hover:bg-white/5 rounded"><Trash2 size={14} className="text-red-400" /></button>}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setEditRole({...r})} className="p-1.5 hover:bg-white/5 rounded"><Edit3 size={14} className="text-[#00F0FF]" /></button>
-                {!r.is_system && <button onClick={() => { if(window.confirm(`Delete "${r.display_name}"?`)) deleteRoleApi(r.role_id).then(loadData).catch(e=>alert(e.message)); }} className="p-1.5 hover:bg-white/5 rounded"><Trash2 size={14} className="text-red-400" /></button>}
+              <p className="text-[10px] text-[#71717a] mb-2">ID: {r.role_id}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {r.permissions?.length > 0 ? r.permissions.map(p => {
+                  const pi = permissions.find(x => x.key === p);
+                  return <span key={p} className="text-[10px] font-bold text-[#00F0FF] bg-[rgba(0,240,255,0.08)] px-2 py-0.5 rounded-full">{pi?.label || p}</span>;
+                }) : <span className="text-[10px] text-[#71717a]">No permissions</span>}
               </div>
             </div>
-            <p className="text-[10px] text-[#71717a] mb-2">ID: {r.role_id}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {r.permissions?.length > 0 ? r.permissions.map(p => {
-                const pi = permissions.find(x => x.key === p);
-                return <span key={p} className="text-[10px] font-bold text-[#00F0FF] bg-[rgba(0,240,255,0.08)] px-2 py-0.5 rounded-full">{pi?.label || p}</span>;
-              }) : <span className="text-[10px] text-[#71717a]">No permissions</span>}
+          ))}
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold text-white mb-1">Push notifications</h3>
+        <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Send push notifications to app users.</p>
+        <div className="flex gap-3 mb-6">
+          <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)] flex-1 text-center">
+            <p className="text-3xl font-black text-white">{pushTokens.total}</p>
+            <p className="text-xs text-[#71717a] tracking-[1px]">REGISTERED DEVICES</p>
+          </div>
+          <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)] flex-1 text-center">
+            <p className="text-3xl font-black text-white">{pushHistory.length}</p>
+            <p className="text-xs text-[#71717a] tracking-[1px]">NOTIFICATIONS SENT</p>
+          </div>
+        </div>
+        <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] mb-6">
+          <h4 className="text-base font-bold text-white mb-4">Send new notification</h4>
+          <Label>TITLE</Label>
+          <Input value={pushTitle} onChange={e => setPushTitle(e.target.value)} />
+          <Label>MESSAGE</Label>
+          <Textarea rows={3} value={pushBody} onChange={e => setPushBody(e.target.value)} />
+          <Btn pink className="w-full mt-4" onClick={async () => {
+            if(!pushTitle||!pushBody) return alert('Fill in title and message');
+            try { const r = await sendPushNotificationApi(pushTitle, pushBody); setPushTitle(''); setPushBody(''); alert(`Sent! Targeted: ${r.tokens_targeted}, Success: ${r.success}`); Promise.all([getPushTokensApi(),getPushHistoryApi()]).then(([t,h])=>{setPushTokens(t);setPushHistory(h);}); } catch(e){ alert(e.message); }
+          }}><Send size={16} /> SEND TO ALL DEVICES</Btn>
+        </div>
+        {pushHistory.length > 0 && (
+          <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)]">
+            <h4 className="text-base font-bold text-white mb-4">Recent notifications</h4>
+            <div className="space-y-3">
+              {pushHistory.map((n, i) => (
+                <div key={i} className="bg-[#09090b] rounded-lg p-4 border border-[rgba(255,255,255,0.05)]">
+                  <div className="flex justify-between"><span className="font-bold text-white">{n.title}</span><span className="text-xs text-[#71717a]">{n.result?.success||0}/{(n.result?.success||0)+(n.result?.failed||0)}</span></div>
+                  <p className="text-sm text-[#a1a1aa] mt-1">{n.body}</p>
+                  <p className="text-[10px] text-[#71717a] mt-2">{new Date(n.sent_at).toLocaleString()}</p>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
 
-  const renderPush = () => (
-    <div>
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Push Notifications</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Send push notifications to app users.</p>
-      <div className="flex gap-3 mb-6">
-        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)] flex-1 text-center">
-          <p className="text-3xl font-black text-white">{pushTokens.total}</p>
-          <p className="text-xs text-[#71717a] tracking-[1px]">REGISTERED DEVICES</p>
-        </div>
-        <div className="bg-[#18181b] rounded-lg p-5 border border-[rgba(255,255,255,0.1)] flex-1 text-center">
-          <p className="text-3xl font-black text-white">{pushHistory.length}</p>
-          <p className="text-xs text-[#71717a] tracking-[1px]">NOTIFICATIONS SENT</p>
-        </div>
-      </div>
-      <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] mb-6">
-        <h3 className="text-lg font-bold text-white mb-4">Send New Notification</h3>
-        <Label>TITLE</Label>
-        <Input value={pushTitle} onChange={e => setPushTitle(e.target.value)} />
-        <Label>MESSAGE</Label>
-        <Textarea rows={3} value={pushBody} onChange={e => setPushBody(e.target.value)} />
-        <Btn pink className="w-full mt-4" onClick={async () => {
-          if(!pushTitle||!pushBody) return alert('Fill in title and message');
-          try { const r = await sendPushNotificationApi(pushTitle, pushBody); setPushTitle(''); setPushBody(''); alert(`Sent! Targeted: ${r.tokens_targeted}, Success: ${r.success}`); Promise.all([getPushTokensApi(),getPushHistoryApi()]).then(([t,h])=>{setPushTokens(t);setPushHistory(h);}); } catch(e){ alert(e.message); }
-        }}><Send size={16} /> SEND TO ALL DEVICES</Btn>
-      </div>
-      {pushHistory.length > 0 && (
-        <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)]">
-          <h3 className="text-lg font-bold text-white mb-4">Recent Notifications</h3>
-          <div className="space-y-3">
-            {pushHistory.map((n, i) => (
-              <div key={i} className="bg-[#09090b] rounded-lg p-4 border border-[rgba(255,255,255,0.05)]">
-                <div className="flex justify-between"><span className="font-bold text-white">{n.title}</span><span className="text-xs text-[#71717a]">{n.result?.success||0}/{(n.result?.success||0)+(n.result?.failed||0)}</span></div>
-                <p className="text-sm text-[#a1a1aa] mt-1">{n.body}</p>
-                <p className="text-[10px] text-[#71717a] mt-2">{new Date(n.sent_at).toLocaleString()}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, events: renderEvents, contests: renderContests, 'podcasts-shows': renderPodcastsShows, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
+  const panels = {
+    overview: renderOverview,
+    broadcast: renderBroadcast,
+    news: renderNews,
+    'events-promos': renderEventsPromos,
+    'podcasts-shows': renderPodcastsShows,
+    comments: renderComments,
+    'station-ops': renderStationOps,
+    administration: renderAdministration,
+  };
 
   return (
     <div data-testid="admin-page">
@@ -705,56 +711,28 @@ export default function Admin() {
             <Shield size={18} className="text-[#FF007F]" />
             <span className="text-base font-extrabold text-white tracking-[1px]">Dashboard</span>
           </div>
-          {sidebar.map(s => (
-            <button key={s.key} onClick={() => setTab(s.key)} data-testid={`admin-tab-${s.key}`}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-1 text-left transition-colors ${tab===s.key?'bg-[rgba(255,0,127,0.1)]':''}`}>
-              <s.icon size={16} className={tab===s.key?'text-[#FF007F]':'text-[#71717a]'} />
-              <span className={`text-sm flex-1 ${tab===s.key?'text-white font-semibold':'text-[#71717a]'}`}>{s.label}</span>
-              {s.key==='requests'&&pendingCount>0&&<span className="bg-[#FF007F] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">{pendingCount}</span>}
-            </button>
+          {sidebarGroups.map((group, gi) => (
+            <div key={group.label ?? `group-${gi}`} className={gi > 0 ? 'mt-5' : ''}>
+              {group.label && (
+                <div className="px-2 mb-2">
+                  <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">{group.label}</span>
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {group.items.map(s => (
+                  <button key={s.key} type="button" onClick={() => setTab(s.key)} data-testid={`admin-tab-${s.key}`}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-0.5 text-left transition-colors ${tab===s.key?'bg-[rgba(255,0,127,0.1)]':''}`}>
+                    <s.icon size={16} className={tab===s.key?'text-[#FF007F]':'text-[#71717a]'} />
+                    <span className={`text-sm flex-1 ${tab===s.key?'text-white font-semibold':'text-[#71717a]'}`}>{s.label}</span>
+                    {s.showPendingBadge && pendingCount > 0 && (
+                      <span className="bg-[#FF007F] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">{pendingCount}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
           <div className="h-px bg-[rgba(255,255,255,0.1)] my-4" />
-          <div className="px-2 mb-2">
-            <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">VIEW SITE</span>
-          </div>
-          <div className="space-y-0.5 mb-3">
-            {MAIN_NAV_LINKS.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                end={l.to === '/'}
-                data-testid={`admin-site-nav-${l.label.toLowerCase().replace(/\s/g, '-')}`}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-bold tracking-[1px] transition-colors ${
-                    isActive ? 'bg-white/[0.06] text-white' : 'text-[#71717a] hover:text-white hover:bg-white/[0.03]'
-                  }`
-                }
-              >
-                <ExternalLink size={12} className="opacity-60 shrink-0" />
-                {l.label}
-              </NavLink>
-            ))}
-          </div>
-          <div className="px-2 mb-2">
-            <span className="text-[10px] font-extrabold text-[#71717a] tracking-[2px]">MORE</span>
-          </div>
-          <div className="space-y-0.5 mb-4">
-            {MORE_SITE_LINKS.map((l) => (
-              <NavLink
-                key={l.to + l.label}
-                to={l.to}
-                data-testid={`admin-site-more-${l.label.toLowerCase().replace(/\s/g, '-')}`}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-bold tracking-[1px] transition-colors ${
-                    isActive ? 'bg-white/[0.06] text-white' : 'text-[#71717a] hover:text-white hover:bg-white/[0.03]'
-                  }`
-                }
-              >
-                <ExternalLink size={12} className="opacity-60 shrink-0" />
-                {l.label}
-              </NavLink>
-            ))}
-          </div>
           <Link to="/" className="flex items-center gap-3 px-3 py-3 text-[#71717a] hover:text-white transition-colors">
             <ChevronLeft size={16} /><span className="text-sm">Back to Home</span>
           </Link>
