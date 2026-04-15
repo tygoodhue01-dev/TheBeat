@@ -1,15 +1,4 @@
-/**
- * Backend origin without trailing slash. If unset/invalid, use '' so API_BASE is '/api'
- * (CRA dev server proxies /api and /uploads — see src/setupProxy.js).
- */
-const BACKEND_ORIGIN = (() => {
-  const raw = (process.env.REACT_APP_BACKEND_URL || '').trim().replace(/\/$/, '');
-  if (raw && raw !== 'undefined') return raw;
-  return '';
-})();
-
-/** Same-origin '/api' when env is missing; otherwise full URL to the API. */
-export const API_BASE = BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api` : '/api';
+const API_BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 async function readJsonResponse(res, fallback) {
   try {
@@ -34,7 +23,7 @@ async function publicGetJson(path, fallback) {
 /** Full URL for uploaded files or relative paths stored on the API (e.g. /uploads/avatars/...) */
 export function mediaUrl(pathOrUrl, version = '') {
   if (!pathOrUrl) return '';
-  const base = (BACKEND_ORIGIN || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+  const base = (process.env.REACT_APP_BACKEND_URL || '').replace(/\/$/, '');
   const raw = String(pathOrUrl).replace(/\\/g, '/');
   let built = '';
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
