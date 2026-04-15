@@ -6,7 +6,10 @@ import {
   updateRequestStatusApi, deleteRequestApi, createNewsApi, getNewsApi, updateNewsApi, deleteNewsApi,
   updateNowPlayingApi, getPendingCommentsApi, approveCommentApi, deleteCommentApi,
   getScheduleApi, createScheduleSlotApi, updateScheduleSlotApi, deleteScheduleSlotApi,
+  getShowsApi, createShowApi, updateShowApi, deleteShowApi,
+  getPodcastsApi, createPodcastApi, updatePodcastApi, deletePodcastApi, getDjsApi,
   getEventsApi, createEventApi, updateEventApi, deleteEventApi,
+  getContestsApi, createContestApi, updateContestApi, deleteContestApi,
   getJobApplicationsApi, updateJobApplicationStatusApi, deleteJobApplicationApi, sendEmailToApplicantApi,
   getRolesApi, getPermissionsApi, createRoleApi, updateRoleApi, deleteRoleApi,
   getPushTokensApi, sendPushNotificationApi, getPushHistoryApi,
@@ -15,7 +18,7 @@ import {
 import WebNavBar from '../components/Navbar';
 import {
   LayoutGrid, Radio, Music, Users, FileText, Newspaper, MessageSquare, Calendar,
-  Briefcase, Shield, Bell, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail
+  Briefcase, Shield, Bell, Gift, ChevronLeft, Check, X, Trash2, Plus, Edit3, Save, Send, Mail
 } from 'lucide-react';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -30,6 +33,10 @@ export default function Admin() {
   const [requests, setRequests] = useState([]);
   const [allNews, setAllNews] = useState([]);
   const [events, setEvents] = useState([]);
+  const [contests, setContests] = useState([]);
+  const [shows, setShows] = useState([]);
+  const [podcasts, setPodcasts] = useState([]);
+  const [djs, setDjs] = useState([]);
   const [pendingComments, setPendingComments] = useState([]);
   const [scheduleSlots, setScheduleSlots] = useState([]);
   const [jobApps, setJobApps] = useState([]);
@@ -54,6 +61,10 @@ export default function Admin() {
   const [editNews, setEditNews] = useState(null);
   const [editSchedule, setEditSchedule] = useState(null);
   const [editEvent, setEditEvent] = useState(null);
+  const [editContest, setEditContest] = useState(null);
+  const [editShow, setEditShow] = useState(null);
+  const [editPodcast, setEditPodcast] = useState(null);
+  const [editDj, setEditDj] = useState(null);
   const [emailApp, setEmailApp] = useState(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
@@ -62,14 +73,22 @@ export default function Admin() {
 
   const loadData = useCallback(async () => {
     try {
-      const [st, us, rq, nw, ev, sc, ja, cm, rl, pm] = await Promise.all([
+      const [st, us, rq, nw, ev, ct, sh, pd, dj, sc, ja, cm, rl, pm] = await Promise.all([
         getAdminStatsApi(), getAdminUsersApi(), getAdminRequestsApi(), getNewsApi(),
         getEventsApi(),
+        getContestsApi(true),
+        getShowsApi(),
+        getPodcastsApi(),
+        getDjsApi(),
         getScheduleApi(), getJobApplicationsApi(), getPendingCommentsApi(),
         getRolesApi().catch(() => []), getPermissionsApi().catch(() => [])
       ]);
       setStats(st); setUsers(us); setRequests(rq); setAllNews(nw);
       setEvents(ev);
+      setContests(ct);
+      setShows(sh);
+      setPodcasts(pd);
+      setDjs(dj);
       setScheduleSlots(sc); setJobApps(ja); setPendingComments(cm);
       setRoles(rl); setPermissions(pm);
     } catch (e) { console.error(e); }
@@ -106,6 +125,10 @@ export default function Admin() {
     { key: 'content', label: 'Publish News', icon: FileText, roles: ['admin','editor'] },
     { key: 'manage-news', label: 'Manage News', icon: Newspaper, roles: ['admin','editor'] },
     { key: 'events', label: 'Upcoming Events', icon: Calendar, roles: ['admin'] },
+    { key: 'contests', label: 'Contests & Giveaways', icon: Gift, roles: ['admin'] },
+    { key: 'shows', label: 'Shows', icon: Radio, roles: ['admin','dj'] },
+    { key: 'podcasts', label: 'Podcasts', icon: Music, roles: ['admin','dj'] },
+    { key: 'djs', label: 'DJs', icon: Users, roles: ['admin'] },
     { key: 'comments', label: 'Comments', icon: MessageSquare, roles: ['admin','editor'] },
     { key: 'schedule', label: 'Schedule', icon: Calendar, roles: ['admin'] },
     { key: 'jobs', label: 'Job Applications', icon: Briefcase, roles: ['admin'] },
@@ -359,6 +382,172 @@ export default function Admin() {
     </div>
   );
 
+  const renderContests = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Contests & Giveaways</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Add and manage contest promotions shown on the homepage.</p>
+        </div>
+        <Btn pink onClick={() => setEditContest({ title: '', description: '', prize: '', end_date: '', how_to_enter: '', image_url: '' })}>
+          <Plus size={16} /> ADD CONTEST
+        </Btn>
+      </div>
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Prize</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">End Date</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
+            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+          </tr></thead>
+          <tbody>
+            {contests.map(c => (
+              <tr key={c.contest_id} className="border-b border-white/[0.04]">
+                <td className="px-4 py-3 text-white font-medium">{c.title}</td>
+                <td className="px-4 py-3 text-[#a1a1aa]">{c.prize || '—'}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{c.end_date || '—'}</td>
+                <td className="px-4 py-3">
+                  <span className={`text-[10px] font-extrabold tracking-[1px] px-2 py-0.5 rounded-full ${c.active === false ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                    {c.active === false ? 'INACTIVE' : 'ACTIVE'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateContestApi(c.contest_id, { active: c.active === false });
+                        loadData();
+                      } catch (err) { alert(err.message); }
+                    }}
+                    className="text-xs text-[#FFF000] font-semibold hover:underline"
+                  >
+                    {c.active === false ? 'Activate' : 'Deactivate'}
+                  </button>
+                  <button onClick={() => setEditContest({ ...c })} className="text-xs text-[#00F0FF] font-semibold hover:underline ml-3">Edit</button>
+                  <button onClick={() => { if (window.confirm(`Delete "${c.title}"?`)) deleteContestApi(c.contest_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {contests.length === 0 && <p className="text-center text-[#71717a] py-8">No contests yet</p>}
+      </div>
+    </div>
+  );
+
+  const renderShows = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Shows</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Manage shows displayed on the homepage.</p>
+        </div>
+        <Btn pink onClick={() => setEditShow({ name: '', description: '', dj_id: '', dj_name: '', schedule: '', image_url: '' })}>
+          <Plus size={16} /> ADD SHOW
+        </Btn>
+      </div>
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">DJ</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Schedule</th>
+            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+          </tr></thead>
+          <tbody>
+            {shows.map(s => (
+              <tr key={s.show_id} className="border-b border-white/[0.04]">
+                <td className="px-4 py-3 text-white font-medium">{s.name}</td>
+                <td className="px-4 py-3 text-[#a1a1aa]">{s.dj_name || '—'}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{s.schedule || '—'}</td>
+                <td className="px-4 py-3 text-right">
+                  <button onClick={() => setEditShow({ ...s })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                  <button onClick={() => { if (window.confirm(`Delete "${s.name}"?`)) deleteShowApi(s.show_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {shows.length === 0 && <p className="text-center text-[#71717a] py-8">No shows yet</p>}
+      </div>
+    </div>
+  );
+
+  const renderPodcasts = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Podcasts</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Manage podcast episodes displayed on the homepage.</p>
+        </div>
+        <Btn pink onClick={() => setEditPodcast({ title: '', description: '', show_name: '', dj_name: '', duration: '', audio_url: '', image_url: '' })}>
+          <Plus size={16} /> ADD PODCAST
+        </Btn>
+      </div>
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Show</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">DJ</th>
+            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+          </tr></thead>
+          <tbody>
+            {podcasts.map(p => (
+              <tr key={p.podcast_id} className="border-b border-white/[0.04]">
+                <td className="px-4 py-3 text-white font-medium">{p.title}</td>
+                <td className="px-4 py-3 text-[#a1a1aa]">{p.show_name || '—'}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs">{p.dj_name || '—'}</td>
+                <td className="px-4 py-3 text-right">
+                  <button onClick={() => setEditPodcast({ ...p })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                  <button onClick={() => { if (window.confirm(`Delete "${p.title}"?`)) deletePodcastApi(p.podcast_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {podcasts.length === 0 && <p className="text-center text-[#71717a] py-8">No podcasts yet</p>}
+      </div>
+    </div>
+  );
+
+  const renderDjs = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">DJs</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Edit DJ profiles shown on the homepage.</p>
+        </div>
+      </div>
+      <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
+        <table className="w-full text-sm">
+          <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Name</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Email</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Bio</th>
+            <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
+          </tr></thead>
+          <tbody>
+            {djs.map(d => (
+              <tr key={d.user_id} className="border-b border-white/[0.04]">
+                <td className="px-4 py-3 text-white font-medium">{d.name}</td>
+                <td className="px-4 py-3 text-[#a1a1aa]">{d.email}</td>
+                <td className="px-4 py-3 text-[#71717a] text-xs max-w-[340px] truncate">{d.bio || '—'}</td>
+                <td className="px-4 py-3 text-right">
+                  <button onClick={() => setEditDj({ ...d })} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
+                  <button onClick={() => { if (window.confirm(`Remove DJ "${d.name}"?`)) deleteUserApi(d.user_id).then(loadData).catch(err => alert(err.message)); }} className="text-xs text-red-400 font-semibold hover:underline ml-3">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {djs.length === 0 && <p className="text-center text-[#71717a] py-8">No DJs yet</p>}
+      </div>
+    </div>
+  );
+
   const renderComments = () => (
     <div>
       <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Comment Moderation</h2>
@@ -536,7 +725,7 @@ export default function Admin() {
     </div>
   );
 
-  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, events: renderEvents, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
+  const panels = { overview: renderOverview, nowplaying: renderNowPlaying, requests: renderRequests, users: renderUsers, content: renderContent, 'manage-news': renderManageNews, events: renderEvents, contests: renderContests, shows: renderShows, podcasts: renderPodcasts, djs: renderDjs, comments: renderComments, schedule: renderSchedule, jobs: renderJobs, roles: renderRoles, push: renderPush };
 
   return (
     <div data-testid="admin-page">
@@ -670,6 +859,152 @@ export default function Admin() {
               } catch (e) { alert(e.message); }
             }}>SAVE</Btn>
             <Btn className="flex-1" onClick={() => setEditEvent(null)}>CANCEL</Btn>
+          </div>
+        </>)}
+      </Modal>
+
+      <Modal show={!!editContest} onClose={() => setEditContest(null)} title={editContest?.contest_id ? 'Edit Contest' : 'Add Contest'}>
+        {editContest && (<>
+          <Label>TITLE</Label>
+          <Input value={editContest.title || ''} onChange={e => setEditContest({ ...editContest, title: e.target.value })} />
+          <Label>DESCRIPTION</Label>
+          <Textarea rows={4} value={editContest.description || ''} onChange={e => setEditContest({ ...editContest, description: e.target.value })} />
+          <Label>PRIZE</Label>
+          <Input value={editContest.prize || ''} onChange={e => setEditContest({ ...editContest, prize: e.target.value })} />
+          <Label>END DATE (YYYY-MM-DD)</Label>
+          <Input value={editContest.end_date || ''} onChange={e => setEditContest({ ...editContest, end_date: e.target.value })} />
+          <Label>HOW TO ENTER</Label>
+          <Textarea rows={3} value={editContest.how_to_enter || ''} onChange={e => setEditContest({ ...editContest, how_to_enter: e.target.value })} />
+          <Label>IMAGE URL</Label>
+          <Input value={editContest.image_url || ''} onChange={e => setEditContest({ ...editContest, image_url: e.target.value })} />
+          <div className="flex gap-3 mt-6">
+            <Btn pink className="flex-1" onClick={async () => {
+              if (!editContest.title) return alert('Title is required');
+              try {
+                const payload = {
+                  title: editContest.title,
+                  description: editContest.description || '',
+                  prize: editContest.prize || '',
+                  end_date: editContest.end_date || '',
+                  how_to_enter: editContest.how_to_enter || '',
+                  image_url: editContest.image_url || ''
+                };
+                if (editContest.contest_id) {
+                  await updateContestApi(editContest.contest_id, payload);
+                } else {
+                  await createContestApi(payload);
+                }
+                setEditContest(null);
+                loadData();
+                alert('Contest saved!');
+              } catch (e) { alert(e.message); }
+            }}>SAVE</Btn>
+            <Btn className="flex-1" onClick={() => setEditContest(null)}>CANCEL</Btn>
+          </div>
+        </>)}
+      </Modal>
+
+      <Modal show={!!editShow} onClose={() => setEditShow(null)} title={editShow?.show_id ? 'Edit Show' : 'Add Show'}>
+        {editShow && (<>
+          <Label>SHOW NAME</Label>
+          <Input value={editShow.name || ''} onChange={e => setEditShow({ ...editShow, name: e.target.value })} />
+          <Label>DESCRIPTION</Label>
+          <Textarea rows={4} value={editShow.description || ''} onChange={e => setEditShow({ ...editShow, description: e.target.value })} />
+          <Label>DJ NAME</Label>
+          <Input value={editShow.dj_name || ''} onChange={e => setEditShow({ ...editShow, dj_name: e.target.value })} />
+          <Label>SCHEDULE</Label>
+          <Input value={editShow.schedule || ''} onChange={e => setEditShow({ ...editShow, schedule: e.target.value })} />
+          <Label>IMAGE URL</Label>
+          <Input value={editShow.image_url || ''} onChange={e => setEditShow({ ...editShow, image_url: e.target.value })} />
+          <div className="flex gap-3 mt-6">
+            <Btn pink className="flex-1" onClick={async () => {
+              if (!editShow.name) return alert('Show name is required');
+              try {
+                const payload = {
+                  name: editShow.name,
+                  description: editShow.description || '',
+                  dj_id: editShow.dj_id || '',
+                  dj_name: editShow.dj_name || '',
+                  schedule: editShow.schedule || '',
+                  image_url: editShow.image_url || ''
+                };
+                if (editShow.show_id) {
+                  await updateShowApi(editShow.show_id, payload);
+                } else {
+                  await createShowApi(payload);
+                }
+                setEditShow(null);
+                loadData();
+                alert('Show saved!');
+              } catch (e) { alert(e.message); }
+            }}>SAVE</Btn>
+            <Btn className="flex-1" onClick={() => setEditShow(null)}>CANCEL</Btn>
+          </div>
+        </>)}
+      </Modal>
+
+      <Modal show={!!editPodcast} onClose={() => setEditPodcast(null)} title={editPodcast?.podcast_id ? 'Edit Podcast' : 'Add Podcast'}>
+        {editPodcast && (<>
+          <Label>TITLE</Label>
+          <Input value={editPodcast.title || ''} onChange={e => setEditPodcast({ ...editPodcast, title: e.target.value })} />
+          <Label>DESCRIPTION</Label>
+          <Textarea rows={4} value={editPodcast.description || ''} onChange={e => setEditPodcast({ ...editPodcast, description: e.target.value })} />
+          <Label>SHOW NAME</Label>
+          <Input value={editPodcast.show_name || ''} onChange={e => setEditPodcast({ ...editPodcast, show_name: e.target.value })} />
+          <Label>DJ NAME</Label>
+          <Input value={editPodcast.dj_name || ''} onChange={e => setEditPodcast({ ...editPodcast, dj_name: e.target.value })} />
+          <Label>DURATION</Label>
+          <Input value={editPodcast.duration || ''} onChange={e => setEditPodcast({ ...editPodcast, duration: e.target.value })} />
+          <Label>AUDIO URL</Label>
+          <Input value={editPodcast.audio_url || ''} onChange={e => setEditPodcast({ ...editPodcast, audio_url: e.target.value })} />
+          <Label>IMAGE URL</Label>
+          <Input value={editPodcast.image_url || ''} onChange={e => setEditPodcast({ ...editPodcast, image_url: e.target.value })} />
+          <div className="flex gap-3 mt-6">
+            <Btn pink className="flex-1" onClick={async () => {
+              if (!editPodcast.title) return alert('Podcast title is required');
+              try {
+                const payload = {
+                  title: editPodcast.title,
+                  description: editPodcast.description || '',
+                  show_name: editPodcast.show_name || '',
+                  dj_name: editPodcast.dj_name || '',
+                  duration: editPodcast.duration || '',
+                  audio_url: editPodcast.audio_url || '',
+                  image_url: editPodcast.image_url || ''
+                };
+                if (editPodcast.podcast_id) {
+                  await updatePodcastApi(editPodcast.podcast_id, payload);
+                } else {
+                  await createPodcastApi(payload);
+                }
+                setEditPodcast(null);
+                loadData();
+                alert('Podcast saved!');
+              } catch (e) { alert(e.message); }
+            }}>SAVE</Btn>
+            <Btn className="flex-1" onClick={() => setEditPodcast(null)}>CANCEL</Btn>
+          </div>
+        </>)}
+      </Modal>
+
+      <Modal show={!!editDj} onClose={() => setEditDj(null)} title="Edit DJ">
+        {editDj && (<>
+          <Label>NAME</Label>
+          <Input value={editDj.name || ''} onChange={e => setEditDj({ ...editDj, name: e.target.value })} />
+          <Label>EMAIL</Label>
+          <Input value={editDj.email || ''} onChange={e => setEditDj({ ...editDj, email: e.target.value })} />
+          <Label>BIO</Label>
+          <Textarea rows={4} value={editDj.bio || ''} onChange={e => setEditDj({ ...editDj, bio: e.target.value })} />
+          <div className="flex gap-3 mt-6">
+            <Btn pink className="flex-1" onClick={async () => {
+              try {
+                await updateUserApi(editDj.user_id, { name: editDj.name, email: editDj.email, role: 'dj', bio: editDj.bio });
+                setEditDj(null);
+                loadData();
+                alert('DJ updated!');
+              } catch (e) { alert(e.message); }
+            }}>SAVE</Btn>
+            <Btn className="flex-1" onClick={() => setEditDj(null)}>CANCEL</Btn>
           </div>
         </>)}
       </Modal>

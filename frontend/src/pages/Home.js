@@ -129,11 +129,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ===== SHOWS & DJS ===== */}
+      {/* ===== DJS ===== */}
       {(shows.length > 0 || djs.length > 0) && (
         <section className="max-w-[1200px] mx-auto px-8 mt-12" data-testid="shows-section">
           <div className="flex items-end justify-between mb-6">
-            <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">SHOWS & DJS</h2>
+            <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">DJS</h2>
             <span className="text-[13px] text-[#71717a]">Meet your on-air talent</span>
           </div>
           <div className="flex flex-wrap gap-5">
@@ -254,12 +254,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ===== PODCASTS & REPLAYS ===== */}
+      {/* ===== PODCASTS & SHOWS ===== */}
       {podcasts.length > 0 && (
         <section className="max-w-[1200px] mx-auto px-8 mt-12" data-testid="podcasts-section">
           <div className="flex items-end justify-between mb-6">
             <div>
-              <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">PODCASTS & REPLAYS</h2>
+              <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">PODCASTS & SHOWS</h2>
               <p className="text-[13px] text-[#71717a] mt-1">Catch up on what you missed</p>
             </div>
           </div>

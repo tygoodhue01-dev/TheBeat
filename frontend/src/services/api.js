@@ -146,6 +146,24 @@ export async function getShowsApi() {
   if (!res.ok) return [];
   return res.json();
 }
+export async function createShowApi(data) {
+  const res = await authFetch(`${API_BASE}/shows`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function updateShowApi(showId, data) {
+  const res = await authFetch(`${API_BASE}/shows/${showId}`, { method: 'PUT', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function deleteShowApi(showId) {
+  const res = await authFetch(`${API_BASE}/shows/${showId}`, { method: 'DELETE' });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
 
 // Now Playing
 export async function getNowPlayingApi() {
@@ -251,15 +269,52 @@ export async function deleteEventApi(eventId) {
   if (!res.ok) throw new Error(fmtErr(r.detail));
   return r;
 }
-export async function getContestsApi() {
-  const res = await fetch(`${API_BASE}/contests`);
+export async function getContestsApi(includeInactive = false) {
+  const q = includeInactive ? '?include_inactive=true' : '';
+  const res = await fetch(`${API_BASE}/contests${q}`);
   if (!res.ok) return [];
   return res.json();
+}
+export async function createContestApi(data) {
+  const res = await authFetch(`${API_BASE}/contests`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function updateContestApi(contestId, data) {
+  const res = await authFetch(`${API_BASE}/contests/${contestId}`, { method: 'PUT', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function deleteContestApi(contestId) {
+  const res = await authFetch(`${API_BASE}/contests/${contestId}`, { method: 'DELETE' });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
 }
 export async function getPodcastsApi() {
   const res = await fetch(`${API_BASE}/podcasts`);
   if (!res.ok) return [];
   return res.json();
+}
+export async function createPodcastApi(data) {
+  const res = await authFetch(`${API_BASE}/podcasts`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function updatePodcastApi(podcastId, data) {
+  const res = await authFetch(`${API_BASE}/podcasts/${podcastId}`, { method: 'PUT', body: JSON.stringify(data) });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function deletePodcastApi(podcastId) {
+  const res = await authFetch(`${API_BASE}/podcasts/${podcastId}`, { method: 'DELETE' });
+  const r = await res.json();
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
 }
 
 // Recently Played

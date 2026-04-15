@@ -157,6 +157,14 @@ class ShowCreate(BaseModel):
     schedule: str = ""
     image_url: str = ""
 
+class ShowUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    dj_id: Optional[str] = None
+    dj_name: Optional[str] = None
+    schedule: Optional[str] = None
+    image_url: Optional[str] = None
+
 class NowPlayingUpdate(BaseModel):
     song_title: str
     artist: str = ""
@@ -200,6 +208,15 @@ class ContestCreate(BaseModel):
     how_to_enter: str = ""
     image_url: str = ""
 
+class ContestUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    prize: Optional[str] = None
+    end_date: Optional[str] = None
+    how_to_enter: Optional[str] = None
+    image_url: Optional[str] = None
+    active: Optional[bool] = None
+
 class PodcastCreate(BaseModel):
     title: str
     description: str = ""
@@ -208,6 +225,15 @@ class PodcastCreate(BaseModel):
     duration: str = ""
     audio_url: str = ""
     image_url: str = ""
+
+class PodcastUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    show_name: Optional[str] = None
+    dj_name: Optional[str] = None
+    duration: Optional[str] = None
+    audio_url: Optional[str] = None
+    image_url: Optional[str] = None
 
 class ScheduleSlot(BaseModel):
     day_of_week: str  # Monday, Tuesday, etc.
@@ -1032,6 +1058,27 @@ async def create_show(req: ShowCreate, user: dict = Depends(require_roles("admin
     show_doc.pop("_id", None)
     return show_doc
 
+@api_router.put("/shows/{show_id}")
+async def update_show(show_id: str, req: ShowUpdate, user: dict = Depends(require_roles("admin", "dj"))):
+    update_data = {k: v for k, v in req.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.shows.update_one({"show_id": show_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    updated = await db.shows.find_one({"show_id": show_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/shows/{show_id}")
+async def delete_show(show_id: str, user: dict = Depends(require_roles("admin", "dj"))):
+    result = await db.shows.delete_one({"show_id": show_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Show not found")
+    return {"message": "Show deleted"}
+
 # ==================== NOW PLAYING ENDPOINT ====================
 @api_router.get("/now-playing")
 async def get_now_playing():
@@ -1608,8 +1655,9 @@ async def delete_event(event_id: str, user: dict = Depends(require_roles("admin"
 
 # ==================== CONTESTS ENDPOINTS ====================
 @api_router.get("/contests")
-async def list_contests():
-    contests = await db.contests.find({"active": True}, {"_id": 0}).sort("created_at", -1).to_list(20)
+async def list_contests(include_inactive: bool = False):
+    query = {} if include_inactive else {"active": True}
+    contests = await db.contests.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return contests
 
 @api_router.post("/contests")
@@ -1624,6 +1672,27 @@ async def create_contest(req: ContestCreate, user: dict = Depends(require_roles(
     await db.contests.insert_one(doc)
     doc.pop("_id", None)
     return doc
+
+@api_router.put("/contests/{contest_id}")
+async def update_contest(contest_id: str, req: ContestUpdate, user: dict = Depends(require_roles("admin"))):
+    update_data = {k: v for k, v in req.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.contests.update_one({"contest_id": contest_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contest not found")
+
+    updated = await db.contests.find_one({"contest_id": contest_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/contests/{contest_id}")
+async def delete_contest(contest_id: str, user: dict = Depends(require_roles("admin"))):
+    result = await db.contests.delete_one({"contest_id": contest_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contest not found")
+    return {"message": "Contest deleted"}
 
 # ==================== PODCASTS / REPLAYS ====================
 @api_router.get("/podcasts")
@@ -1644,6 +1713,27 @@ async def create_podcast(req: PodcastCreate, user: dict = Depends(require_roles(
     await db.podcasts.insert_one(doc)
     doc.pop("_id", None)
     return doc
+
+@api_router.put("/podcasts/{podcast_id}")
+async def update_podcast(podcast_id: str, req: PodcastUpdate, user: dict = Depends(require_roles("admin", "dj"))):
+    update_data = {k: v for k, v in req.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    result = await db.podcasts.update_one({"podcast_id": podcast_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Podcast not found")
+
+    updated = await db.podcasts.find_one({"podcast_id": podcast_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/podcasts/{podcast_id}")
+async def delete_podcast(podcast_id: str, user: dict = Depends(require_roles("admin", "dj"))):
+    result = await db.podcasts.delete_one({"podcast_id": podcast_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Podcast not found")
+    return {"message": "Podcast deleted"}
 
 # ==================== REWARDS ENDPOINTS ====================
 @api_router.get("/rewards")
