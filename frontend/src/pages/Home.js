@@ -109,12 +109,21 @@ export default function Home() {
   const [contests, setContests] = useState([]);
   const [podcasts, setPodcasts] = useState([]);
   const [djs, setDjs] = useState([]);
+  const [djPage, setDjPage] = useState(0);
   const [schedule, setSchedule] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
   const audioRef = useRef(null);
 
   const nextShow = useMemo(() => getNextShow(schedule), [schedule]);
+  const djPages = useMemo(() => {
+    if (!Array.isArray(djs) || djs.length === 0) return [];
+    const pages = [];
+    for (let i = 0; i < djs.length; i += 4) pages.push(djs.slice(i, i + 4));
+    return pages;
+  }, [djs]);
+  const hasDjSlideshow = djPages.length > 1;
+  const visibleDjs = djPages[djPage] || djs;
   const currentSongFavoriteId = useMemo(
     () => createSongFavoriteId(np.song_title, np.artist),
     [np.song_title, np.artist]
@@ -135,6 +144,18 @@ export default function Home() {
     const iv = setInterval(() => getNowPlayingApi().then(setNp), 15000);
     return () => clearInterval(iv);
   }, []);
+
+  useEffect(() => {
+    setDjPage(0);
+  }, [djs.length]);
+
+  useEffect(() => {
+    if (!hasDjSlideshow) return undefined;
+    const iv = setInterval(() => {
+      setDjPage((p) => (p + 1) % djPages.length);
+    }, 6000);
+    return () => clearInterval(iv);
+  }, [hasDjSlideshow, djPages.length]);
 
   useEffect(() => {
     if (!user) {
@@ -366,10 +387,32 @@ export default function Home() {
         <section className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mt-12" data-testid="shows-section">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-[22px] font-black text-white tracking-[2px] font-display">DJS</h2>
-            <span className="text-[13px] text-[#71717a]">Meet your on-air talent</span>
+            <div className="flex items-center gap-3">
+              {hasDjSlideshow ? (
+                <div className="flex items-center gap-2" data-testid="dj-slideshow-controls">
+                  <button
+                    type="button"
+                    onClick={() => setDjPage((p) => (p - 1 + djPages.length) % djPages.length)}
+                    className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,0,127,0.45)] transition-colors"
+                    aria-label="Previous DJs"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDjPage((p) => (p + 1) % djPages.length)}
+                    className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,0,127,0.45)] transition-colors"
+                    aria-label="Next DJs"
+                  >
+                    →
+                  </button>
+                </div>
+              ) : null}
+              <span className="text-[13px] text-[#71717a]">Meet your on-air talent</span>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {djs.map(d => (
+            {visibleDjs.map(d => (
               <div key={d.user_id} className="bg-[#18181b] rounded-lg p-5 flex flex-col items-center border border-[rgba(255,255,255,0.1)]" data-testid={`dj-card-${d.user_id}`}>
                 {d.avatar_url ? (
                   <img src={mediaUrl(d.avatar_url)} alt={d.name} className="w-16 h-16 rounded-full object-cover mb-3 border border-[rgba(255,255,255,0.2)]" />
@@ -384,6 +427,19 @@ export default function Home() {
               </div>
             ))}
           </div>
+          {hasDjSlideshow ? (
+            <div className="flex justify-center gap-1.5 mt-4">
+              {djPages.map((_, idx) => (
+                <button
+                  key={`dj-page-${idx}`}
+                  type="button"
+                  onClick={() => setDjPage(idx)}
+                  className={`w-2 h-2 rounded-full transition-colors ${djPage === idx ? 'bg-[#FF007F]' : 'bg-white/25 hover:bg-white/45'}`}
+                  aria-label={`Go to DJ page ${idx + 1}`}
+                />
+              ))}
+            </div>
+          ) : null}
         </section>
       )}
 
