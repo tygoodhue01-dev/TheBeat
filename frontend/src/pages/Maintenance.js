@@ -239,15 +239,15 @@ export default function Maintenance() {
           )}
         </div>
 
-        <p className="text-center mt-8 text-xs text-[#52525b]">
-          <Link to="/login" className="text-[#00F0FF] hover:underline font-semibold">
-            Open full sign-in page
+        <div className="mt-10 pt-6 border-t border-[rgba(255,255,255,0.08)] text-center">
+          <Link
+            to="/admin"
+            className="text-[11px] font-semibold text-[#71717a] hover:text-[#00F0FF] transition-colors tracking-wide"
+            data-testid="maintenance-admin-link"
+          >
+            Admin login
           </Link>
-          {' · '}
-          <Link to="/admin" className="text-[#00F0FF] hover:underline font-semibold">
-            Admin
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
