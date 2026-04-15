@@ -9,14 +9,8 @@ import {
 } from '../services/api';
 import { Play, Pause, Share2, Music, Clock, Cloud, Headphones, Calendar, Mail, Heart } from 'lucide-react';
 import { getCentralNowParts, getMonthDayFromIsoDate } from '../utils/time';
-
-function getSharedAudio() {
-  if (typeof window === 'undefined') return null;
-  if (!window.__THEBEAT_SHARED_AUDIO__) {
-    window.__THEBEAT_SHARED_AUDIO__ = new Audio();
-  }
-  return window.__THEBEAT_SHARED_AUDIO__;
-}
+import { getSharedAudio, applyVolumeToElement } from '../utils/streamAudio';
+import StreamVolumeBar from '../components/StreamVolumeBar';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_INDEX = {
@@ -152,6 +146,7 @@ export default function Home() {
     const shared = getSharedAudio();
     if (!shared) return undefined;
     audioRef.current = shared;
+    applyVolumeToElement(shared);
 
     const syncPlaying = () => setPlaying(!shared.paused && !shared.ended);
     syncPlaying();
@@ -329,6 +324,7 @@ export default function Home() {
                 {playing ? <Pause size={16} /> : <Play size={16} />}
                 {playing ? 'PAUSE' : 'LISTEN LIVE'}
               </button>
+              <StreamVolumeBar />
               <button onClick={shareSong} data-testid="share-btn"
                 className="flex items-center gap-2 bg-transparent border border-[rgba(0,240,255,0.3)] rounded-full px-4 sm:px-5 py-3 text-[11px] sm:text-[12px] font-bold text-[#00F0FF] tracking-[1px] hover:bg-[rgba(0,240,255,0.1)] transition-colors">
                 <Share2 size={14} /> SHARE

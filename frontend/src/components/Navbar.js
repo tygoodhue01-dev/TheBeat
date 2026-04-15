@@ -23,10 +23,11 @@ export default function WebNavBar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-[100] bg-[rgba(9,9,11,0.95)] border-b border-[rgba(255,0,127,0.15)]" data-testid="main-navbar">
+      <nav className="sticky top-0 z-[100] glass border-b border-[rgba(255,0,127,0.12)] shadow-[0_4px_24px_rgba(0,0,0,0.35)]" data-testid="main-navbar">
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF007F]/50 to-transparent pointer-events-none" aria-hidden />
         <div className="max-w-[1200px] mx-auto w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
-          <Link to="/" className="flex items-center" data-testid="nav-logo">
-            <span className="text-[18px] sm:text-[22px] font-black text-[#FF007F] tracking-[2px] font-display">THE BEAT </span>
+          <Link to="/" className="flex items-center group" data-testid="nav-logo">
+            <span className="text-[18px] sm:text-[22px] font-black text-[#FF007F] tracking-[2px] font-display transition-colors group-hover:text-[#FF3399]">THE BEAT </span>
             <span className="text-[18px] sm:text-[22px] font-black text-white tracking-[2px] font-display">515</span>
           </Link>
 
@@ -36,8 +37,8 @@ export default function WebNavBar() {
               const active = location.pathname === pathOnly || (pathOnly === '/' && location.pathname === '/');
               return (
               <Link key={l.to} to={l.to} data-testid={`nav-${l.label.toLowerCase().replace(/\s/g, '-')}`}
-                className={`text-xs font-bold tracking-[2px] py-1 transition-colors
-                  ${active ? 'text-white' : 'text-[#a1a1aa] hover:text-white'}`}>
+                className={`text-xs font-bold tracking-[2px] py-1 transition-colors relative
+                  ${active ? 'text-white after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-[#FF007F] after:to-[#00F0FF]' : 'text-[#a1a1aa] hover:text-white'}`}>
                 {l.label}
               </Link>
             );})}

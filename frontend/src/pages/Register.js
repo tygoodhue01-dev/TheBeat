@@ -51,10 +51,11 @@ export default function Register() {
             </div>
             <div className="relative">
               <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" required minLength={10} autoComplete="new-password"
                 className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm placeholder:text-zinc-600 focus:border-beat-pink focus:outline-none transition-colors"
                 data-testid="register-password-input" />
             </div>
+            <p className="text-[11px] text-zinc-500 leading-relaxed -mt-1">Use at least 10 characters with a mix of letters and numbers.</p>
             {error && <p className="text-red-400 text-xs" data-testid="register-error">{error}</p>}
             <button type="submit" disabled={loading} data-testid="register-submit-btn"
               className="w-full py-3 rounded-lg bg-beat-pink text-white font-semibold text-sm hover:bg-beat-pinkLight transition-all flex items-center justify-center gap-2 disabled:opacity-50">

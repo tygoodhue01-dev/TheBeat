@@ -26,6 +26,45 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'test_database')]
 
 JWT_ALGORITHM = "HS256"
+logger = logging.getLogger(__name__)
+
+
+def _is_production() -> bool:
+    return os.environ.get("ENVIRONMENT", os.environ.get("APP_ENV", "")).lower() in ("production", "prod", "live")
+
+
+def _parse_cors_origins() -> List[str]:
+    """Explicit browser origins only. Wildcard + credentials is unsafe and non-compliant."""
+    raw = os.environ.get("CORS_ORIGINS", "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    logger.warning(
+        "CORS_ORIGINS is not set; allowing localhost only. "
+        "Set CORS_ORIGINS to your frontend URL(s), comma-separated, for production."
+    )
+    return ["http://127.0.0.1:3000", "http://localhost:3000"]
+
+
+def _validate_new_password(password: str) -> None:
+    if len(password) < 10:
+        raise HTTPException(status_code=400, detail="Password must be at least 10 characters")
+    if len(password) > 256:
+        raise HTTPException(status_code=400, detail="Password is too long")
+    if not any(c.isalpha() for c in password) or not any(c.isdigit() for c in password):
+        raise HTTPException(status_code=400, detail="Password must include at least one letter and one number")
+
+
+def _verify_image_magic_bytes(content: bytes, content_type: str) -> bool:
+    if content_type == "image/jpeg":
+        return len(content) >= 3 and content[:3] == b"\xff\xd8\xff"
+    if content_type == "image/png":
+        return len(content) >= 8 and content[:8] == b"\x89PNG\r\n\x1a\n"
+    if content_type == "image/gif":
+        return len(content) >= 6 and content[:6] in (b"GIF87a", b"GIF89a")
+    if content_type == "image/webp":
+        return len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP"
+    return False
+
 
 def get_jwt_secret():
     return os.environ["JWT_SECRET"]
@@ -136,7 +175,7 @@ def require_roles(*roles):
 
 # Pydantic Models
 class RegisterRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     name: str
 
@@ -378,8 +417,12 @@ class PushNotificationSend(BaseModel):
     data: Optional[dict] = None
     target: str = "all"  # "all" or specific user_id
 
-# App setup
-app = FastAPI()
+# App setup — hide interactive docs in production to reduce attack surface
+app = FastAPI(
+    docs_url=None if _is_production() else "/docs",
+    redoc_url=None if _is_production() else "/redoc",
+    openapi_url=None if _is_production() else "/openapi.json",
+)
 _upload_root = pathlib.Path(__file__).resolve().parent / "uploads"
 _upload_root.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_upload_root)), name="uploads")
@@ -389,7 +432,8 @@ api_router = APIRouter(prefix="/api")
 # ==================== AUTH ENDPOINTS ====================
 @api_router.post("/auth/register")
 async def register(req: RegisterRequest):
-    email = req.email.lower().strip()
+    email = str(req.email).lower().strip()
+    _validate_new_password(req.password)
     existing = await db.users.find_one({"email": email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -690,6 +734,8 @@ async def upload_my_avatar(request: Request, file: UploadFile = File(...), user:
         max_size = 5 * 1024 * 1024
         if len(content) > max_size:
             raise HTTPException(status_code=400, detail="Image must be 5MB or smaller")
+        if not _verify_image_magic_bytes(content, content_type):
+            raise HTTPException(status_code=400, detail="File content does not match a valid image")
         with dest.open("wb") as out:
             out.write(content)
     finally:
@@ -1688,6 +1734,8 @@ class StreamConfigUpdate(BaseModel):
     stream_url: Optional[str] = None
     station_name: Optional[str] = None
     tagline: Optional[str] = None
+    maintenance_mode: Optional[bool] = None
+    maintenance_message: Optional[str] = None
 
 @api_router.get("/stream-config")
 async def get_stream_config():
@@ -1696,8 +1744,14 @@ async def get_stream_config():
         return {
             "stream_url": "https://das-edge62-live365-dal03.cdnstream.com/a55796",
             "station_name": "The Beat 515",
-            "tagline": "Proud. Loud. Local."
+            "tagline": "Proud. Loud. Local.",
+            "maintenance_mode": False,
+            "maintenance_message": "",
         }
+    if "maintenance_mode" not in config:
+        config["maintenance_mode"] = False
+    if "maintenance_message" not in config:
+        config["maintenance_message"] = ""
     return config
 
 @api_router.put("/stream-config")
@@ -1710,6 +1764,11 @@ async def update_stream_config(req: StreamConfigUpdate, user: dict = Depends(req
         update_data["station_name"] = req.station_name
     if req.tagline is not None:
         update_data["tagline"] = req.tagline
+    if req.maintenance_mode is not None:
+        update_data["maintenance_mode"] = bool(req.maintenance_mode)
+    if req.maintenance_message is not None:
+        msg = (req.maintenance_message or "").strip()
+        update_data["maintenance_message"] = msg[:2000]
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -2182,18 +2241,37 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_parse_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    expose_headers=["Content-Length"],
+    max_age=600,
 )
 
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "geolocation=(), microphone=(), camera=(), interest-cohort=()",
+    )
+    return response
+
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 # ==================== SEED DATA ====================
 @app.on_event("startup")
 async def startup():
+    jwt_secret = os.environ.get("JWT_SECRET", "")
+    if len(jwt_secret) < 32:
+        logger.warning("JWT_SECRET should be at least 32 characters for production security.")
+
     await db.users.create_index("email", unique=True)
     await db.users.create_index("user_id", unique=True)
     await db.login_attempts.create_index("identifier")
@@ -2201,11 +2279,18 @@ async def startup():
     await db.song_requests.create_index("request_id", unique=True)
     await db.shows.create_index("show_id", unique=True)
     
-    # Seed admin
+    # Seed admin (never overwrite an existing admin password from env — that was a privilege-escalation risk)
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@thebeat515.com")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "Beat515Admin!")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
     existing = await db.users.find_one({"email": admin_email})
     if not existing:
+        if not admin_password:
+            admin_password = secrets.token_urlsafe(18)
+            logger.warning(
+                "ADMIN_PASSWORD not set; generated one-time password for %s — change it immediately: %s",
+                admin_email,
+                admin_password,
+            )
         await db.users.insert_one({
             "user_id": f"user_{uuid.uuid4().hex[:12]}",
             "email": admin_email,
@@ -2218,8 +2303,6 @@ async def startup():
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         logger.info("Admin user seeded")
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
 
     # Backfill roles array for legacy users.
     async for legacy_user in db.users.find({"$or": [{"roles": {"$exists": False}}, {"roles": {"$size": 0}}]}, {"_id": 0, "user_id": 1, "role": 1}):
@@ -2262,62 +2345,62 @@ async def startup():
         except Exception:
             continue
     
-    # Seed sample DJ
-    dj_email = "dj@thebeat515.com"
-    existing_dj = await db.users.find_one({"email": dj_email})
-    if not existing_dj:
-        dj_id = f"user_{uuid.uuid4().hex[:12]}"
-        await db.users.insert_one({
-            "user_id": dj_id,
-            "email": dj_email,
-            "password_hash": hash_password("DJBeat515!"),
-            "name": "DJ Pulse",
-            "role": "dj",
-            "roles": ["dj"],
-            "bio": "Spinning the hottest tracks every weeknight! Your favorite Top 40 DJ.",
-            "avatar_url": "",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        # Seed shows for DJ
-        await db.shows.insert_one({
-            "show_id": f"show_{uuid.uuid4().hex[:12]}",
-            "name": "The Evening Pulse",
-            "description": "The hottest Top 40 hits to get your evening started right. Call in with your requests!",
-            "dj_id": dj_id,
-            "dj_name": "DJ Pulse",
-            "schedule": "Mon-Fri 6PM-10PM",
-            "image_url": "https://images.unsplash.com/photo-1765894103984-91ff695bbbaf?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwzfHxyYWRpbyUyMERKJTIwaG9zdGluZ3xlbnwwfHx8fDE3NzYwNzA2MzB8MA&ixlib=rb-4.1.0&q=85",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        await db.shows.insert_one({
-            "show_id": f"show_{uuid.uuid4().hex[:12]}",
-            "name": "Weekend Warm-Up",
-            "description": "Getting the weekend started with the biggest bangers. Non-stop hits from noon to 4!",
-            "dj_id": dj_id,
-            "dj_name": "DJ Pulse",
-            "schedule": "Sat-Sun 12PM-4PM",
-            "image_url": "",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        logger.info("DJ user and shows seeded")
-    
-    # Seed editor
-    editor_email = "news@thebeat515.com"
-    existing_editor = await db.users.find_one({"email": editor_email})
-    if not existing_editor:
-        await db.users.insert_one({
-            "user_id": f"user_{uuid.uuid4().hex[:12]}",
-            "email": editor_email,
-            "password_hash": hash_password("News515!"),
-            "name": "Sarah Chen",
-            "role": "editor",
-            "roles": ["editor"],
-            "bio": "Music journalist and entertainment news editor at The Beat 515.",
-            "avatar_url": "",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        logger.info("Editor user seeded")
-    
+    # Optional demo DJ / editor with known passwords — enable for local dev only (SEED_DEMO_ACCOUNTS=1)
+    seed_demo = os.environ.get("SEED_DEMO_ACCOUNTS", "0").strip().lower() in ("1", "true", "yes", "on")
+    if seed_demo:
+        dj_email = "dj@thebeat515.com"
+        existing_dj = await db.users.find_one({"email": dj_email})
+        if not existing_dj:
+            dj_id = f"user_{uuid.uuid4().hex[:12]}"
+            await db.users.insert_one({
+                "user_id": dj_id,
+                "email": dj_email,
+                "password_hash": hash_password("DJBeat515!"),
+                "name": "DJ Pulse",
+                "role": "dj",
+                "roles": ["dj"],
+                "bio": "Spinning the hottest tracks every weeknight! Your favorite Top 40 DJ.",
+                "avatar_url": "",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            await db.shows.insert_one({
+                "show_id": f"show_{uuid.uuid4().hex[:12]}",
+                "name": "The Evening Pulse",
+                "description": "The hottest Top 40 hits to get your evening started right. Call in with your requests!",
+                "dj_id": dj_id,
+                "dj_name": "DJ Pulse",
+                "schedule": "Mon-Fri 6PM-10PM",
+                "image_url": "https://images.unsplash.com/photo-1765894103984-91ff695bbbaf?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwzfHxyYWRpbyUyMERKJTIwaG9zdGluZ3xlbnwwfHx8fDE3NzYwNzA2MzB8MA&ixlib=rb-4.1.0&q=85",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            await db.shows.insert_one({
+                "show_id": f"show_{uuid.uuid4().hex[:12]}",
+                "name": "Weekend Warm-Up",
+                "description": "Getting the weekend started with the biggest bangers. Non-stop hits from noon to 4!",
+                "dj_id": dj_id,
+                "dj_name": "DJ Pulse",
+                "schedule": "Sat-Sun 12PM-4PM",
+                "image_url": "",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            logger.info("DJ user and shows seeded")
+
+        editor_email = "news@thebeat515.com"
+        existing_editor = await db.users.find_one({"email": editor_email})
+        if not existing_editor:
+            await db.users.insert_one({
+                "user_id": f"user_{uuid.uuid4().hex[:12]}",
+                "email": editor_email,
+                "password_hash": hash_password("News515!"),
+                "name": "Sarah Chen",
+                "role": "editor",
+                "roles": ["editor"],
+                "bio": "Music journalist and entertainment news editor at The Beat 515.",
+                "avatar_url": "",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            logger.info("Editor user seeded")
+
     # Seed sample news
     news_count = await db.news.count_documents({})
     if news_count == 0:

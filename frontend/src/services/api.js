@@ -212,7 +212,15 @@ export async function updateNowPlayingApi(data) {
 // Stream Config
 export async function getStreamConfigApi() {
   const res = await fetch(`${API_BASE}/stream-config`);
-  if (!res.ok) return { stream_url: '', station_name: 'The Beat 515', tagline: 'Proud. Loud. Local.' };
+  if (!res.ok) {
+    return {
+      stream_url: '',
+      station_name: 'The Beat 515',
+      tagline: 'Proud. Loud. Local.',
+      maintenance_mode: false,
+      maintenance_message: '',
+    };
+  }
   return res.json();
 }
 export async function updateStreamConfigApi(data) {

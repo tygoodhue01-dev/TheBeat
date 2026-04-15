@@ -69,12 +69,14 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
 
   // Forms
-  const [newsForm, setNewsForm] = useState({ title: '', content: '', category: 'general', summary: '' });
+  const [newsForm, setNewsForm] = useState({ title: '', content: '', category: 'general', summary: '', image_url: '' });
   const [npSong, setNpSong] = useState('');
   const [npArtist, setNpArtist] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
   const [streamStation, setStreamStation] = useState('');
   const [streamTagline, setStreamTagline] = useState('');
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [pushTitle, setPushTitle] = useState('');
   const [pushBody, setPushBody] = useState('');
 
@@ -129,6 +131,8 @@ export default function Admin() {
         setStreamUrl(c.stream_url || '');
         setStreamStation(c.station_name || '');
         setStreamTagline(c.tagline || '');
+        setMaintenanceMode(!!c.maintenance_mode);
+        setMaintenanceMessage(c.maintenance_message || '');
       });
     }
     if (tab === 'analytics') {
@@ -249,7 +253,10 @@ export default function Admin() {
         <Input value={streamTagline} onChange={e => setStreamTagline(e.target.value)} placeholder="Proud. Loud. Local." />
         <Btn pink className="w-full mt-6" onClick={async () => {
           try {
-            const data = {};
+            const data = {
+              maintenance_mode: maintenanceMode,
+              maintenance_message: maintenanceMessage.trim(),
+            };
             if (streamUrl) data.stream_url = streamUrl;
             if (streamStation) data.station_name = streamStation;
             if (streamTagline) data.tagline = streamTagline;
@@ -257,6 +264,62 @@ export default function Admin() {
             alert('Stream config saved! The player and metadata polling will now use this URL.');
           } catch (e) { alert(e.message); }
         }} data-testid="save-stream-config-btn"><Save size={16} /> SAVE STREAM CONFIG</Btn>
+      </div>
+
+      <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] mb-6" data-testid="admin-maintenance-panel">
+        <h3 className="text-lg font-bold text-white mb-1">Public site &amp; maintenance</h3>
+        <p className="text-xs text-[#71717a] mb-4">
+          When maintenance is on, visitors see a maintenance page with the live player and last five songs. Staff can still open <span className="text-[#a1a1aa]">/login</span> and <span className="text-[#a1a1aa]">/admin</span>.
+        </p>
+        <Label>SITE STATUS</Label>
+        <div className="flex flex-wrap gap-2 mt-2 mb-4">
+          <button
+            type="button"
+            data-testid="maintenance-off-btn"
+            onClick={async () => {
+              try {
+                await updateStreamConfigApi({ maintenance_mode: false, maintenance_message: maintenanceMessage.trim() });
+                setMaintenanceMode(false);
+              } catch (e) { alert(e.message); }
+            }}
+            className={`px-4 py-2 rounded-full text-[11px] font-extrabold tracking-[1px] border transition-colors ${!maintenanceMode ? 'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]' : 'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a] hover:text-white'}`}
+          >
+            LIVE SITE
+          </button>
+          <button
+            type="button"
+            data-testid="maintenance-on-btn"
+            onClick={async () => {
+              try {
+                await updateStreamConfigApi({ maintenance_mode: true, maintenance_message: maintenanceMessage.trim() });
+                setMaintenanceMode(true);
+              } catch (e) { alert(e.message); }
+            }}
+            className={`px-4 py-2 rounded-full text-[11px] font-extrabold tracking-[1px] border transition-colors ${maintenanceMode ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a] hover:text-white'}`}
+          >
+            MAINTENANCE PAGE
+          </button>
+        </div>
+        <Label>MAINTENANCE MESSAGE</Label>
+        <Textarea
+          rows={4}
+          value={maintenanceMessage}
+          onChange={e => setMaintenanceMessage(e.target.value)}
+          placeholder="Short note shown to listeners (e.g. we're upgrading our website)..."
+          data-testid="maintenance-message-input"
+        />
+        <Btn
+          className="w-full mt-3"
+          onClick={async () => {
+            try {
+              await updateStreamConfigApi({ maintenance_mode: maintenanceMode, maintenance_message: maintenanceMessage.trim() });
+              alert('Maintenance message saved.');
+            } catch (e) { alert(e.message); }
+          }}
+          data-testid="save-maintenance-message-btn"
+        >
+          <Save size={16} /> SAVE MESSAGE ONLY
+        </Btn>
       </div>
 
       <div className="bg-[rgba(0,240,255,0.05)] rounded-xl p-5 border border-[rgba(0,240,255,0.15)]">
@@ -492,6 +555,8 @@ export default function Admin() {
         <Input value={newsForm.title} onChange={e => setNewsForm(p=>({...p,title:e.target.value}))} data-testid="news-title-input" />
         <Label>SUMMARY</Label>
         <Input value={newsForm.summary} onChange={e => setNewsForm(p=>({...p,summary:e.target.value}))} />
+        <Label>IMAGE URL</Label>
+        <Input value={newsForm.image_url} onChange={e => setNewsForm(p=>({...p,image_url:e.target.value}))} placeholder="https://..." />
         <Label>CONTENT</Label>
         <Textarea rows={6} value={newsForm.content} onChange={e => setNewsForm(p=>({...p,content:e.target.value}))} data-testid="news-content-input" />
         <Label>CATEGORY</Label>
@@ -502,7 +567,7 @@ export default function Admin() {
         </div>
         <Btn pink className="w-full mt-6" onClick={async () => {
           if (!newsForm.title||!newsForm.content) return alert('Title and content required');
-          try { await createNewsApi(newsForm); setNewsForm({title:'',content:'',category:'general',summary:''}); alert('Published!'); loadData(); } catch(e){ alert(e.message); }
+          try { await createNewsApi(newsForm); setNewsForm({title:'',content:'',category:'general',summary:'',image_url:''}); alert('Published!'); loadData(); } catch(e){ alert(e.message); }
         }} data-testid="news-create-btn"><Plus size={16} /> PUBLISH ARTICLE</Btn>
       </div>
     </div>
@@ -517,6 +582,7 @@ export default function Admin() {
           <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
             <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Title</th>
             <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Category</th>
+            <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Status</th>
             <th className="text-left px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Published</th>
             <th className="text-right px-4 py-3 text-[11px] font-bold text-[#71717a] tracking-[1px]">Actions</th>
           </tr></thead>
@@ -525,6 +591,11 @@ export default function Admin() {
               <tr key={a.news_id} className="border-b border-white/[0.04]">
                 <td className="px-4 py-3 text-white font-medium">{a.title}</td>
                 <td className="px-4 py-3 text-[#00F0FF] text-xs font-bold tracking-[1px]">{a.category?.toUpperCase()}</td>
+                <td className="px-4 py-3 text-xs">
+                  <span className={`font-bold tracking-[1px] ${a.published ? 'text-green-400' : 'text-amber-400'}`}>
+                    {a.published ? 'LIVE' : 'DRAFT'}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-[#71717a] text-xs">{formatDateCentral(a.created_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <button onClick={() => setEditNews({...a})} className="text-xs text-[#00F0FF] font-semibold hover:underline">Edit</button>
@@ -1014,14 +1085,49 @@ export default function Admin() {
         {editNews && (<>
           <Label>TITLE</Label>
           <Input value={editNews.title||''} onChange={e => setEditNews({...editNews, title:e.target.value})} />
+          <Label>SUMMARY</Label>
+          <Textarea rows={3} value={editNews.summary||''} onChange={e => setEditNews({...editNews, summary:e.target.value})} />
+          <Label>IMAGE URL</Label>
+          <Input value={editNews.image_url||''} onChange={e => setEditNews({...editNews, image_url:e.target.value})} placeholder="https://..." />
           <Label>CONTENT</Label>
           <Textarea rows={5} value={editNews.content||''} onChange={e => setEditNews({...editNews, content:e.target.value})} />
           <Label>CATEGORY</Label>
           <div className="flex gap-2 mt-1">{CATS.map(c => (
             <button key={c} onClick={() => setEditNews({...editNews, category:c})} className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${editNews.category===c?'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]':'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}>{c.toUpperCase()}</button>
           ))}</div>
+          <Label>STATUS</Label>
+          <div className="flex gap-2 mt-1">
+            <button
+              type="button"
+              onClick={() => setEditNews({ ...editNews, published: true })}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${editNews.published !== false ? 'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]' : 'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}
+            >
+              LIVE
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditNews({ ...editNews, published: false })}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${editNews.published === false ? 'bg-[#FF007F] border-[#FF007F] text-white' : 'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}
+            >
+              DRAFT
+            </button>
+          </div>
           <div className="flex gap-3 mt-6">
-            <Btn pink className="flex-1" onClick={async () => { try { await updateNewsApi(editNews.news_id, {title:editNews.title,content:editNews.content,category:editNews.category,summary:editNews.summary}); setEditNews(null); loadData(); alert('Updated!'); } catch(e){alert(e.message);} }}>SAVE</Btn>
+            <Btn pink className="flex-1" onClick={async () => {
+              try {
+                await updateNewsApi(editNews.news_id, {
+                  title: editNews.title,
+                  content: editNews.content,
+                  category: editNews.category,
+                  summary: editNews.summary,
+                  image_url: editNews.image_url || '',
+                  published: editNews.published !== false
+                });
+                setEditNews(null);
+                loadData();
+                alert('Updated!');
+              } catch(e){alert(e.message);}
+            }}>SAVE</Btn>
             <Btn className="flex-1" onClick={() => setEditNews(null)}>CANCEL</Btn>
           </div>
         </>)}
