@@ -41,8 +41,40 @@ const Modal = ({ show, onClose, title, children }) => {
 };
 
 const Label = ({ children }) => <label className="text-[11px] font-bold text-[#00F0FF] tracking-[2px] mb-1.5 mt-4 block">{children}</label>;
-const Input = (props) => <input {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none ${props.className||''}`} />;
-const Textarea = (props) => <textarea {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none resize-none ${props.className||''}`} />;
+const Input = ({ onChange, className = '', ...props }) => (
+  <input
+    {...props}
+    onChange={(e) => {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      onChange?.(e);
+      requestAnimationFrame(() => {
+        if (document.activeElement !== e.target) e.target.focus();
+        if (typeof start === 'number' && typeof end === 'number') {
+          try { e.target.setSelectionRange(start, end); } catch (_) {}
+        }
+      });
+    }}
+    className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none ${className}`}
+  />
+);
+const Textarea = ({ onChange, className = '', ...props }) => (
+  <textarea
+    {...props}
+    onChange={(e) => {
+      const start = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      onChange?.(e);
+      requestAnimationFrame(() => {
+        if (document.activeElement !== e.target) e.target.focus();
+        if (typeof start === 'number' && typeof end === 'number') {
+          try { e.target.setSelectionRange(start, end); } catch (_) {}
+        }
+      });
+    }}
+    className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none resize-none ${className}`}
+  />
+);
 const Btn = ({ children, onClick, pink, className = '' }) => (
   <button type="button" onClick={onClick} className={`flex items-center justify-center gap-2 rounded-full py-3 px-6 text-[13px] font-extrabold tracking-[1px] transition-opacity hover:opacity-90 ${pink ? 'bg-[#FF007F] text-white' : 'bg-[#27272a] text-[#a1a1aa]'} ${className}`}>{children}</button>
 );
@@ -155,7 +187,7 @@ export default function Admin() {
         setMaintenanceMessage(c.maintenance_message || '');
       });
     }
-    if (tab === 'analytics') {
+    if (tab === 'analytics' || tab === 'overview') {
       setAnalyticsLoading(true);
       Promise.all([
         getFavoriteStatsApi().catch(() => ({ top_songs: [], total_favorites: 0, unique_users: 0, favorites_last_24h: 0 })),
@@ -180,7 +212,6 @@ export default function Admin() {
   const sidebarGroups = [
     { label: null, items: [
       { key: 'overview', label: 'Overview', icon: LayoutGrid, roles: ['admin','dj','editor'] },
-      { key: 'analytics', label: 'Analytics', icon: BarChart3, roles: ['admin','dj'] },
     ]},
     { label: 'Broadcast', items: [
       { key: 'nowplaying', label: 'Stream settings', icon: Radio, roles: ['admin','dj'] },
@@ -214,6 +245,7 @@ export default function Admin() {
   const renderOverview = () => (
     <div>
       <h2 className="text-2xl font-extrabold text-white tracking-[1px]">Station Overview</h2>
+      <p className="text-sm text-[#a1a1aa] mt-1">Operations and analytics in one place.</p>
       <div className="flex flex-wrap gap-3 mt-6" data-testid="admin-stats">
         {[
           { label: 'Total Users', val: stats.total_users, color: '#FF007F' },
@@ -234,6 +266,57 @@ export default function Admin() {
           <span className="text-sm font-semibold text-[#FFF000]">{pendingCount} request{pendingCount > 1 ? 's' : ''} awaiting approval</span>
         </div>
       )}
+      <div className="mt-10 pt-8 border-t border-white/[0.08]" data-testid="admin-overview-analytics">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 size={16} className="text-[#00F0FF]" />
+          <h3 className="text-lg font-extrabold text-white tracking-[1px]">Analytics Snapshot</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+            <p className="text-2xl font-black text-white">{analyticsOverview.total_users || 0}</p>
+            <p className="text-[11px] text-[#71717a] mt-1 font-medium">Total Users</p>
+          </div>
+          <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+            <p className="text-2xl font-black text-white">{analyticsOverview.new_users_7d || 0}</p>
+            <p className="text-[11px] text-[#71717a] mt-1 font-medium">New Users (7d)</p>
+          </div>
+          <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+            <p className="text-2xl font-black text-white">{favoriteStats.total_favorites || 0}</p>
+            <p className="text-[11px] text-[#71717a] mt-1 font-medium">Total Favorites</p>
+          </div>
+          <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+            <p className="text-2xl font-black text-white">{analyticsOverview.songs_played_today || 0}</p>
+            <p className="text-[11px] text-[#71717a] mt-1 font-medium">Songs Played Today</p>
+          </div>
+        </div>
+        {analyticsLoading ? (
+          <p className="text-sm text-[#71717a]">Loading analytics...</p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+              <p className="text-xs font-bold text-white mb-2">Top Rated</p>
+              {topRatedSongs.slice(0, 4).map((song, i) => (
+                <p key={`${song.song_id}-${i}`} className="text-[11px] text-[#a1a1aa] truncate">{song.song_title}</p>
+              ))}
+              {topRatedSongs.length === 0 ? <p className="text-[11px] text-[#71717a]">No data yet.</p> : null}
+            </div>
+            <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+              <p className="text-xs font-bold text-white mb-2">Most Played</p>
+              {mostPlayedSongs.slice(0, 4).map((song, i) => (
+                <p key={`${song.song_title}-${song.artist}-${i}`} className="text-[11px] text-[#a1a1aa] truncate">{song.song_title}</p>
+              ))}
+              {mostPlayedSongs.length === 0 ? <p className="text-[11px] text-[#71717a]">No data yet.</p> : null}
+            </div>
+            <div className="bg-[#18181b] rounded-lg p-4 border border-[rgba(255,255,255,0.1)]">
+              <p className="text-xs font-bold text-white mb-2">Trending</p>
+              {trendingSongs.slice(0, 4).map((song, i) => (
+                <p key={`${song.song_title}-${song.artist}-${i}`} className="text-[11px] text-[#a1a1aa] truncate">{song.song_title}</p>
+              ))}
+              {trendingSongs.length === 0 ? <p className="text-[11px] text-[#71717a]">No data yet.</p> : null}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 

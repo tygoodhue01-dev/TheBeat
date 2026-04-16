@@ -547,6 +547,18 @@ export async function deleteCommentApi(commentId) {
   return res.json();
 }
 
+// Public comments (news/show/event)
+export async function getCommentsApi(postType, postId) {
+  const data = await publicGetJson(`/comments/${encodeURIComponent(postType)}/${encodeURIComponent(postId)}`, []);
+  return Array.isArray(data) ? data : [];
+}
+export async function createCommentApi(data) {
+  const res = await authFetch(`${API_BASE}/comments`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+
 // News update
 export async function updateNewsApi(newsId, data) {
   const res = await authFetch(`${API_BASE}/news/${newsId}`, { method: 'PUT', body: JSON.stringify(data) });
