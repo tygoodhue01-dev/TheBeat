@@ -44,7 +44,7 @@ const Label = ({ children }) => <label className="text-[11px] font-bold text-[#0
 const Input = (props) => <input {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none ${props.className||''}`} />;
 const Textarea = (props) => <textarea {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none resize-none ${props.className||''}`} />;
 const Btn = ({ children, onClick, pink, className = '' }) => (
-  <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-full py-3 px-6 text-[13px] font-extrabold tracking-[1px] transition-opacity hover:opacity-90 ${pink ? 'bg-[#FF007F] text-white' : 'bg-[#27272a] text-[#a1a1aa]'} ${className}`}>{children}</button>
+  <button type="button" onClick={onClick} className={`flex items-center justify-center gap-2 rounded-full py-3 px-6 text-[13px] font-extrabold tracking-[1px] transition-opacity hover:opacity-90 ${pink ? 'bg-[#FF007F] text-white' : 'bg-[#27272a] text-[#a1a1aa]'} ${className}`}>{children}</button>
 );
 
 function getUserRoles(user) {
