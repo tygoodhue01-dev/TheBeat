@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mediaUrl } from '../services/api';
-import { User, ChevronDown } from 'lucide-react';
+import { User, ChevronDown, X } from 'lucide-react';
 import ProfileDrawer from './ProfileDrawer';
 import { MAIN_NAV_LINKS } from '../config/navLinks';
 
@@ -10,6 +10,7 @@ export default function WebNavBar() {
   const { user } = useAuth();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDesktopDropdown, setOpenDesktopDropdown] = useState(null);
   const [avatarBroken, setAvatarBroken] = useState(false);
   const [avatarFallbackData, setAvatarFallbackData] = useState(false);
@@ -21,10 +22,19 @@ export default function WebNavBar() {
 
   useEffect(() => {
     setOpenDesktopDropdown(null);
+    setMobileMenuOpen(false);
   }, [location.pathname, location.search]);
 
   const links = MAIN_NAV_LINKS;
   const flatMobileLinks = links.flatMap((item) => (item.type === 'dropdown' ? item.items : [item]));
+  const mobilePrimary = [
+    { to: '/', label: 'HOME' },
+    { to: '/news', label: 'NEWS' },
+    { to: '/requests', label: 'REQUESTS' },
+    { to: '/schedule', label: 'SCHEDULE' },
+  ];
+  const mobilePrimaryPaths = new Set(mobilePrimary.map((item) => item.to));
+  const mobileMoreLinks = flatMobileLinks.filter((item) => !mobilePrimaryPaths.has(item.to));
 
   const isActivePath = (to) => {
     const pathOnly = to.split('?')[0];
@@ -131,22 +141,64 @@ export default function WebNavBar() {
       </nav>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[200] border-t border-[rgba(255,255,255,0.1)] bg-[#0d0d0f]/95 backdrop-blur px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2">
-        <div className="flex gap-1 overflow-x-auto no-scrollbar pb-0.5">
-          {flatMobileLinks.map((item) => {
+        <div className="grid grid-cols-5 gap-1">
+          {mobilePrimary.map((item) => {
             const active = isActivePath(item.to);
             return (
               <Link
                 key={item.to}
                 to={item.to}
                 data-testid={`bottom-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
-                className={`shrink-0 rounded-lg px-3 py-2 text-center text-[10px] font-extrabold tracking-[1px] transition-colors border ${active ? 'text-white border-[#FF007F]/45 bg-[rgba(255,0,127,0.16)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)]'}`}
+                className={`rounded-lg px-1 py-2 text-center text-[10px] font-extrabold tracking-[1px] transition-colors border ${active ? 'text-white border-[#FF007F]/45 bg-[rgba(255,0,127,0.16)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)]'}`}
               >
                 {item.label}
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            data-testid="bottom-nav-more"
+            className={`rounded-lg px-1 py-2 text-center text-[10px] font-extrabold tracking-[1px] transition-colors border ${mobileMenuOpen ? 'text-white border-[#00F0FF]/45 bg-[rgba(0,240,255,0.16)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)]'}`}
+          >
+            MORE
+          </button>
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[220] bg-black/70 flex items-end" onClick={() => setMobileMenuOpen(false)}>
+          <div className="w-full rounded-t-2xl border-t border-[rgba(255,255,255,0.1)] bg-[#0d0d0f] p-4 pb-[max(env(safe-area-inset-bottom),16px)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[11px] font-extrabold tracking-[1.5px] text-[#71717a]">MORE LINKS</p>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"
+                aria-label="Close menu"
+              >
+                <X size={14} className="text-white" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {mobileMoreLinks.map((item) => {
+                const active = isActivePath(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileMenuOpen(false)}
+                    data-testid={`nav-mobile-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                    className={`rounded-lg px-3 py-2.5 text-center text-[11px] font-bold tracking-[1.2px] transition-colors border ${active ? 'text-white border-[#FF007F]/45 bg-[rgba(255,0,127,0.16)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)] hover:text-white'}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="md:hidden h-[76px]" aria-hidden />
 
