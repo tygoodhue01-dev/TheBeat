@@ -13,6 +13,25 @@ import { getSharedAudio, applyVolumeToElement } from '../utils/streamAudio';
 import StreamVolumeBar from '../components/StreamVolumeBar';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEATHER_CODE_LABELS = {
+  0: 'Clear sky',
+  1: 'Mostly clear',
+  2: 'Partly cloudy',
+  3: 'Overcast',
+  45: 'Fog',
+  48: 'Rime fog',
+  51: 'Light drizzle',
+  53: 'Drizzle',
+  55: 'Heavy drizzle',
+  61: 'Light rain',
+  63: 'Rain',
+  65: 'Heavy rain',
+  71: 'Light snow',
+  73: 'Snow',
+  75: 'Heavy snow',
+  80: 'Rain showers',
+  95: 'Thunderstorm'
+};
 const DAY_INDEX = {
   sunday: 0, sun: 0,
   monday: 1, mon: 1,
@@ -112,6 +131,12 @@ export default function Home() {
   const [schedule, setSchedule] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
+  const [weather, setWeather] = useState({
+    tempF: '--',
+    feelsLikeF: '--',
+    humidity: '--',
+    condition: 'Loading...'
+  });
   const audioRef = useRef(null);
 
   const nextShow = useMemo(() => getNextShow(schedule), [schedule]);
@@ -140,6 +165,34 @@ export default function Home() {
     });
     const iv = setInterval(() => getNowPlayingApi().then(setNp), 15000);
     return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadWeather = async () => {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.5868&longitude=-93.625&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code&temperature_unit=fahrenheit');
+        if (!res.ok) return;
+        const data = await res.json();
+        const current = data?.current;
+        if (!current || cancelled) return;
+        setWeather({
+          tempF: Math.round(current.temperature_2m ?? 0),
+          feelsLikeF: Math.round(current.apparent_temperature ?? 0),
+          humidity: Math.round(current.relative_humidity_2m ?? 0),
+          condition: WEATHER_CODE_LABELS[current.weather_code] || 'Current conditions'
+        });
+      } catch (_) {
+        // Keep previous weather values when fetch fails.
+      }
+    };
+
+    loadWeather();
+    const iv = setInterval(loadWeather, 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
   }, []);
 
   useEffect(() => {
@@ -350,10 +403,10 @@ export default function Home() {
         <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] px-5 py-4 sm:py-3.5 flex flex-col sm:flex-row items-center text-center sm:text-left gap-2 sm:gap-3 w-full sm:w-fit" data-testid="weather-widget">
           <Cloud size={24} className="text-[#FFF000] shrink-0" />
           <div>
-            <span className="text-lg font-bold">82&deg;F </span>
+            <span className="text-lg font-bold">{weather.tempF}&deg;F </span>
             <span className="text-[#00F0FF] text-sm font-bold">Des Moines</span>
-            <div className="text-xs text-[#a1a1aa]">Overcast</div>
-            <div className="text-xs text-[#71717a]">Feels like 84&deg; &bull; Humidity 40%</div>
+            <div className="text-xs text-[#a1a1aa]">{weather.condition}</div>
+            <div className="text-xs text-[#71717a]">Feels like {weather.feelsLikeF}&deg; &bull; Humidity {weather.humidity}%</div>
           </div>
         </div>
         <Link

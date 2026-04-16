@@ -272,6 +272,12 @@ export async function deleteUserApi(id) {
   if (!res.ok) throw new Error('Failed');
   return res.json();
 }
+export async function createAdminUserApi(data) {
+  const res = await authFetch(`${API_BASE}/admin/users`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
 
 // Rewards
 export async function getRewardsApi() {

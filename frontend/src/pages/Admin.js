@@ -14,7 +14,7 @@ import {
   getRolesApi, getPermissionsApi, createRoleApi, updateRoleApi, deleteRoleApi,
   getPushTokensApi, sendPushNotificationApi, getPushHistoryApi,
   getStreamConfigApi, updateStreamConfigApi, getFavoriteStatsApi,
-  getAnalyticsOverviewApi, getUserAnalyticsApi, getTopRatedSongsApi, getMostPlayedSongsApi, getTrendingSongsApi
+  getAnalyticsOverviewApi, getUserAnalyticsApi, getTopRatedSongsApi, getMostPlayedSongsApi, getTrendingSongsApi, createAdminUserApi
 } from '../services/api';
 import WebNavBar from '../components/Navbar';
 import {
@@ -93,6 +93,7 @@ export default function Admin() {
   const [emailMessage, setEmailMessage] = useState('');
   const [newRole, setNewRole] = useState(null);
   const [editRole, setEditRole] = useState(null);
+  const [createUserModal, setCreateUserModal] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -510,8 +511,15 @@ export default function Admin() {
 
   const renderUsers = () => (
     <div data-testid="admin-users">
-      <h2 className="text-2xl font-extrabold text-white tracking-[1px]">User management</h2>
-      <p className="text-sm text-[#a1a1aa] mt-1 mb-6">Edit user details, manage roles, or remove accounts.</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-extrabold text-white tracking-[1px]">User management</h2>
+          <p className="text-sm text-[#a1a1aa] mt-1">Edit user details, manage roles, or remove accounts.</p>
+        </div>
+        <Btn pink onClick={() => setCreateUserModal({ name: '', email: '', password: '', role: 'listener', roles: ['listener'] })}>
+          <Plus size={16} /> NEW USER
+        </Btn>
+      </div>
       <div className="bg-[#18181b] rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="bg-white/[0.03] border-b border-[rgba(255,255,255,0.05)]">
@@ -1398,6 +1406,67 @@ export default function Admin() {
               try { await updateRoleApi(editRole.role_id, {display_name:editRole.display_name,color:editRole.color,permissions:editRole.permissions}); setEditRole(null); loadData(); alert('Updated!'); } catch(e){alert(e.message);}
             }}>SAVE CHANGES</Btn>
             <Btn className="flex-1" onClick={() => setEditRole(null)}>CANCEL</Btn>
+          </div>
+        </>)}
+      </Modal>
+
+      <Modal show={!!createUserModal} onClose={() => setCreateUserModal(null)} title="Create New User">
+        {createUserModal && (<>
+          <Label>NAME</Label>
+          <Input value={createUserModal.name || ''} onChange={e => setCreateUserModal({ ...createUserModal, name: e.target.value })} />
+          <Label>EMAIL</Label>
+          <Input type="email" value={createUserModal.email || ''} onChange={e => setCreateUserModal({ ...createUserModal, email: e.target.value })} />
+          <Label>TEMP PASSWORD</Label>
+          <Input
+            type="password"
+            value={createUserModal.password || ''}
+            minLength={10}
+            onChange={e => setCreateUserModal({ ...createUserModal, password: e.target.value })}
+            placeholder="At least 10 characters"
+          />
+          <Label>ROLES</Label>
+          <div className="flex gap-2 mt-1 flex-wrap">
+            {ROLE_OPTIONS.map(r => {
+              const selected = (createUserModal.roles || []).includes(r);
+              return (
+                <button
+                  key={r}
+                  onClick={() => {
+                    const current = Array.isArray(createUserModal.roles) ? [...createUserModal.roles] : [];
+                    const has = current.includes(r);
+                    const next = has ? current.filter((x) => x !== r) : [...current, r];
+                    const normalized = next.length ? next : ['listener'];
+                    setCreateUserModal({ ...createUserModal, roles: normalized, role: normalized[0] });
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-bold tracking-[1px] border ${selected?'bg-[#00F0FF] border-[#00F0FF] text-[#09090b]':'bg-[#09090b] border-[rgba(255,255,255,0.1)] text-[#71717a]'}`}
+                >
+                  {r.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-[#71717a] mt-2">First selected role is used as primary.</p>
+          <div className="flex gap-3 mt-6">
+            <Btn pink className="flex-1" onClick={async () => {
+              if (!createUserModal.name || !createUserModal.email || !createUserModal.password) {
+                alert('Name, email, and password are required.');
+                return;
+              }
+              try {
+                const roles = (createUserModal.roles || []).length ? createUserModal.roles : ['listener'];
+                await createAdminUserApi({
+                  name: createUserModal.name.trim(),
+                  email: createUserModal.email.trim(),
+                  password: createUserModal.password,
+                  role: roles[0],
+                  roles
+                });
+                setCreateUserModal(null);
+                loadData();
+                alert('User created!');
+              } catch (e) { alert(e.message); }
+            }}>CREATE USER</Btn>
+            <Btn className="flex-1" onClick={() => setCreateUserModal(null)}>CANCEL</Btn>
           </div>
         </>)}
       </Modal>

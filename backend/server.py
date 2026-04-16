@@ -218,6 +218,13 @@ class UserUpdate(BaseModel):
     roles: Optional[List[str]] = None
     bio: Optional[str] = None
 
+class AdminUserCreateRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    role: str = "listener"
+    roles: Optional[List[str]] = None
+
 class NewsCreate(BaseModel):
     title: str
     content: str
@@ -1123,6 +1130,32 @@ async def delete_comment(comment_id: str, user: dict = Depends(require_roles("ad
     return {"message": "Comment deleted"}
 
 # ==================== ENHANCED USER MANAGEMENT ====================
+@api_router.post("/admin/users")
+async def create_admin_user(req: AdminUserCreateRequest, admin: dict = Depends(require_roles("admin"))):
+    email = str(req.email).lower().strip()
+    existing = await db.users.find_one({"email": email}, {"_id": 0, "user_id": 1})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    _validate_new_password(req.password)
+    primary_role, roles = normalize_roles(req.role, req.roles)
+    user_doc = {
+        "user_id": f"user_{uuid.uuid4().hex[:12]}",
+        "email": email,
+        "password_hash": hash_password(req.password),
+        "name": req.name.strip(),
+        "role": primary_role,
+        "roles": roles,
+        "bio": "",
+        "avatar_url": "",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": admin.get("user_id"),
+    }
+    await db.users.insert_one(user_doc)
+    user_doc.pop("password_hash", None)
+    user_doc.pop("_id", None)
+    return user_doc
+
 @api_router.put("/admin/users/{user_id}")
 async def update_user(user_id: str, req: UserUpdate, admin: dict = Depends(require_roles("admin"))):
     update_data = {}

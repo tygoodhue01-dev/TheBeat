@@ -19,6 +19,9 @@ import RecentlyPlayed from './pages/RecentlyPlayed';
 import Events from './pages/Events';
 import Maintenance from './pages/Maintenance';
 import InstallPwaPrompt from './components/InstallPwaPrompt';
+import About from './pages/About';
+import Careers from './pages/Careers';
+import Contact from './pages/Contact';
 
 const BG_SHELL = 'min-h-screen text-white font-body bg-beat-bg bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(255,0,127,0.14),transparent_50%),radial-gradient(ellipse_80%_50%_at_100%_50%,rgba(0,240,255,0.08),transparent_45%),radial-gradient(ellipse_60%_40%_at_0%_80%,rgba(255,240,0,0.06),transparent_40%)]';
 
@@ -92,9 +95,9 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/station" element={<Station />} />
-        <Route path="/about" element={<Navigate to="/station#about" replace />} />
-        <Route path="/careers" element={<Navigate to="/station#careers" replace />} />
-        <Route path="/contact" element={<Navigate to="/station#contact" replace />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/careers" element={<Careers />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/leaderboard" element={<Navigate to="/rewards?tab=leaderboard" replace />} />
         <Route path="/recently-played" element={<RecentlyPlayed />} />
         <Route path="/events" element={<Events />} />
