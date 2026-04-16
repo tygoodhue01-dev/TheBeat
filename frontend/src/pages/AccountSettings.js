@@ -90,7 +90,7 @@ export default function AccountSettings() {
           <ArrowLeft size={14} /> Back
         </Link>
         <h1 className="font-display text-2xl sm:text-3xl font-extrabold mb-1">Account</h1>
-        <p className="text-zinc-500 text-sm mb-8">Update your email or password. You can do this here without using the admin dashboard.</p>
+        <p className="text-zinc-500 text-sm mb-8">Update your email or password. You can do this here without using the Admin Panel.</p>
 
         <div className="glass rounded-2xl p-5 sm:p-8 mb-6">
           <h2 className="text-sm font-extrabold tracking-[2px] text-zinc-400 mb-4">EMAIL</h2>

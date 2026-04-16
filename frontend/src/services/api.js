@@ -251,7 +251,7 @@ export async function updateStreamConfigApi(data) {
   return res.json();
 }
 
-// Admin
+// Admin Panel (API routes under /admin)
 export async function getAdminUsersApi() {
   const res = await authFetch(`${API_BASE}/admin/users`);
   if (!res.ok) return [];

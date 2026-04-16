@@ -1,4 +1,4 @@
-/** Matches admin dashboard access: admin, DJ, or editor — not listeners. */
+/** Matches Admin Panel access: admin, DJ, or editor — not listeners. */
 export function isStaffUser(user) {
   if (!user) return false;
   const roles = Array.isArray(user.roles) && user.roles.length ? user.roles : [user.role || 'listener'];

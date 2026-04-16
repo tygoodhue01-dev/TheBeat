@@ -1,4 +1,4 @@
-/** Primary site navigation (navbar + admin "View site" links) */
+/** Primary site navigation (navbar + Admin Panel “view site” links) */
 export const MAIN_NAV_LINKS = [
   { to: '/', label: 'HOME' },
   { to: '/news', label: 'NEWS' },

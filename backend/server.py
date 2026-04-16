@@ -380,7 +380,7 @@ DEFAULT_PERMISSIONS = [
     {"key": "manage_comments", "label": "Manage Comments", "description": "Approve and delete comments"},
     {"key": "manage_shows", "label": "Manage Shows", "description": "Create and edit shows/schedule"},
     {"key": "update_now_playing", "label": "Update Now Playing", "description": "Change currently playing song"},
-    {"key": "view_analytics", "label": "View Analytics", "description": "Access analytics dashboard"},
+    {"key": "view_analytics", "label": "View Analytics", "description": "Access analytics in the Admin Panel"},
     {"key": "manage_applications", "label": "Manage Job Applications", "description": "Review job applications"},
     {"key": "manage_polls", "label": "Manage Polls", "description": "Create and manage polls"},
     {"key": "manage_podcasts", "label": "Manage Podcasts", "description": "Create and edit podcasts"},
@@ -835,7 +835,7 @@ async def get_my_stats(user: dict = Depends(get_current_user)):
 
 @api_router.get("/admin/favorites/stats")
 async def get_favorite_stats(user: dict = Depends(get_current_user)):
-    """Get aggregated favorite song statistics for admin dashboard"""
+    """Get aggregated favorite song statistics for the Admin Panel"""
     if user.get("role") not in ["admin", "dj"]:
         raise HTTPException(status_code=403, detail="Admin access required")
     

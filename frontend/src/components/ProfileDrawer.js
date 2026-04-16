@@ -286,7 +286,7 @@ export default function ProfileDrawer({ open, onClose }) {
             {userRoles.some((r) => ['admin', 'dj', 'editor'].includes(r)) && (
               <Link to="/admin" onClick={onClose} className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,0,127,0.2)] transition-colors">
                 <div className="w-9 h-9 rounded-lg bg-[rgba(255,0,127,0.1)] flex items-center justify-center mr-3"><Shield size={15} className="text-[#FF007F]" /></div>
-                <div><p className="text-sm font-semibold text-white">Dashboard</p><p className="text-[10px] text-[#71717a]">Manage station content</p></div>
+                <div><p className="text-sm font-semibold text-white">Admin Panel</p><p className="text-[10px] text-[#71717a]">Manage station content</p></div>
               </Link>
             )}
 

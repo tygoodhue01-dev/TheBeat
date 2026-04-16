@@ -269,7 +269,7 @@ export default function Admin() {
       <div className="bg-[#18181b] rounded-xl p-6 border border-[rgba(255,255,255,0.1)] mb-6" data-testid="admin-maintenance-panel">
         <h3 className="text-lg font-bold text-white mb-1">Public site &amp; maintenance</h3>
         <p className="text-xs text-[#71717a] mb-4">
-          When maintenance is on, visitors see a maintenance page with the live player and last five songs. Staff can still open <span className="text-[#a1a1aa]">/login</span> and <span className="text-[#a1a1aa]">/admin</span>.
+          When maintenance is on, visitors see a maintenance page with the live player and last five songs. Staff can still open <span className="text-[#a1a1aa]">/login</span> and the Admin Panel at <span className="text-[#a1a1aa]">/admin</span>.
         </p>
         <Label>SITE STATUS</Label>
         <div className="flex flex-wrap gap-2 mt-2 mb-4">
@@ -989,7 +989,7 @@ export default function Admin() {
         <div className="w-full lg:w-[240px] bg-[#0d0d0f] border-b lg:border-b-0 lg:border-r border-[rgba(255,255,255,0.1)] pt-4 lg:pt-6 px-3 lg:px-4 flex-shrink-0 overflow-x-auto" data-testid="admin-sidebar">
           <div className="flex items-center gap-2.5 px-2 mb-6">
             <Shield size={18} className="text-[#FF007F]" />
-            <span className="text-base font-extrabold text-white tracking-[1px]">Dashboard</span>
+            <span className="text-base font-extrabold text-white tracking-[1px]">Admin Panel</span>
           </div>
           {sidebarGroups.map((group, gi) => (
             <div key={group.label ?? `group-${gi}`} className={gi > 0 ? 'mt-1.5 lg:mt-5' : ''}>
