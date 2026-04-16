@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createDjPostApi, deleteDjPostApi, getMyDjPostsApi, updateDjPostApi } from '../services/api';
 import WebNavBar from '../components/Navbar';
@@ -29,9 +29,9 @@ export default function DjBlogManager() {
   const savePost = async () => {
     if (!editing?.title || !editing?.content) return alert('Title and content are required');
     try {
-      if (editing.news_id) {
-        const updated = await updateDjPostApi(editing.news_id, editing);
-        setPosts((curr) => curr.map((p) => (p.news_id === updated.news_id ? updated : p)));
+      if (editing.post_id) {
+        const updated = await updateDjPostApi(editing.post_id, editing);
+        setPosts((curr) => curr.map((p) => (p.post_id === updated.post_id ? updated : p)));
       } else {
         const created = await createDjPostApi(editing);
         setPosts((curr) => [created, ...curr]);
@@ -70,7 +70,7 @@ export default function DjBlogManager() {
         ) : (
           <div className="space-y-3">
             {posts.map((p) => (
-              <div key={p.news_id} className="bg-[#18181b] rounded-xl p-4 border border-[rgba(255,255,255,0.1)]">
+              <div key={p.post_id} className="bg-[#18181b] rounded-xl p-4 border border-[rgba(255,255,255,0.1)]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold tracking-[1.5px] text-[#00F0FF]">{p.category?.toUpperCase()}</p>
@@ -78,7 +78,6 @@ export default function DjBlogManager() {
                     <p className="text-[11px] text-[#71717a] mt-1">{formatDateCentral(p.created_at)}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Link to={`/news/${p.news_id}`} className="px-2 py-1 text-[11px] text-[#a1a1aa] hover:text-white">View</Link>
                     <button type="button" onClick={() => setEditing({ ...p })} className="p-1.5 hover:bg-white/5 rounded">
                       <Edit3 size={14} className="text-[#00F0FF]" />
                     </button>
@@ -86,8 +85,8 @@ export default function DjBlogManager() {
                       type="button"
                       onClick={async () => {
                         if (!window.confirm(`Delete "${p.title}"?`)) return;
-                        await deleteDjPostApi(p.news_id);
-                        setPosts((curr) => curr.filter((x) => x.news_id !== p.news_id));
+                        await deleteDjPostApi(p.post_id);
+                        setPosts((curr) => curr.filter((x) => x.post_id !== p.post_id));
                       }}
                       className="p-1.5 hover:bg-white/5 rounded"
                     >
@@ -104,7 +103,7 @@ export default function DjBlogManager() {
       {editing && (
         <div className="fixed inset-0 z-[240] bg-black/75 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
           <div className="w-full max-w-[700px] rounded-xl border border-white/10 bg-[#18181b] p-5" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-extrabold text-white mb-3">{editing.news_id ? 'Edit DJ Post' : 'New DJ Post'}</h2>
+            <h2 className="text-lg font-extrabold text-white mb-3">{editing.post_id ? 'Edit DJ Post' : 'New DJ Post'}</h2>
             <input
               value={editing.title || ''}
               onChange={(e) => setEditing((p) => ({ ...p, title: e.target.value }))}
