@@ -3,6 +3,12 @@
   "outputDirectory": "frontend/build",
   "installCommand": "cd frontend && npm install",
   "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ],
   "env": {
     "REACT_APP_BACKEND_URL": "https://radio-production-3743.up.railway.app"
   }
