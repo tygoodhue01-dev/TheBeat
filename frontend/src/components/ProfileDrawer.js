@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { updateProfileApi, uploadAvatarApi, getMyPointsApi, getMyFavoritesApi, getMyStatsApi, mediaUrl, deleteSongFavoriteApi } from '../services/api';
-import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, Mic2, Headphones, Camera, Trash2 } from 'lucide-react';
+import { X, Edit3, Save, LogOut, Music, Gift, Calendar, Shield, Star, Mic2, Headphones, Camera, Trash2, Settings } from 'lucide-react';
 
 function createSongFavoriteId(songTitle, artist) {
   const raw = `${songTitle || ''}::${artist || ''}`.trim().toLowerCase();
@@ -276,6 +276,12 @@ export default function ProfileDrawer({ open, onClose }) {
           {/* Quick Actions */}
           <div className="mb-5">
             <span className="text-[10px] font-extrabold text-[#a1a1aa] tracking-[2px] mb-2 block">QUICK ACTIONS</span>
+
+            <Link to="/account" onClick={onClose} data-testid="profile-account-settings"
+              className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(0,240,255,0.25)] transition-colors">
+              <div className="w-9 h-9 rounded-lg bg-[rgba(0,240,255,0.1)] flex items-center justify-center mr-3"><Settings size={15} className="text-[#00F0FF]" /></div>
+              <div><p className="text-sm font-semibold text-white">Account &amp; security</p><p className="text-[10px] text-[#71717a]">Email and password</p></div>
+            </Link>
 
             {userRoles.some((r) => ['admin', 'dj', 'editor'].includes(r)) && (
               <Link to="/admin" onClick={onClose} className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(255,0,127,0.2)] transition-colors">

@@ -9,6 +9,7 @@ import NewsDetail from './pages/NewsDetail';
 import Requests from './pages/Requests';
 import Rewards from './pages/Rewards';
 import Profile from './pages/Profile';
+import AccountSettings from './pages/AccountSettings';
 import Admin from './pages/Admin';
 import Schedule from './pages/Schedule';
 import Login from './pages/Login';
@@ -84,6 +85,7 @@ function AppRoutes() {
         <Route path="/requests" element={<Requests />} />
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/account" element={<AccountSettings />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/login" element={<Login />} />

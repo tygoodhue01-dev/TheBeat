@@ -269,6 +269,14 @@ class ProfileUpdate(BaseModel):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
 
+class AccountEmailChangeRequest(BaseModel):
+    email: EmailStr
+    current_password: str
+
+class AccountPasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 class RewardRedeemRequest(BaseModel):
     reward_id: str
 
@@ -703,6 +711,49 @@ async def update_my_profile(req: ProfileUpdate, user: dict = Depends(get_current
     updated["roles"] = roles
     updated["avatar_url"] = normalize_avatar_url(updated.get("avatar_url"))
     return updated
+
+
+@api_router.put("/users/me/email")
+async def change_my_email(req: AccountEmailChangeRequest, user: dict = Depends(get_current_user)):
+    """Change sign-in email (listeners and staff). Requires current password."""
+    new_email = str(req.email).lower().strip()
+    if new_email == (user.get("email") or "").lower():
+        raise HTTPException(status_code=400, detail="That is already your email address")
+    existing = await db.users.find_one({"email": new_email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    full = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    if not full or not verify_password(req.current_password, full.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"email": new_email, "updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    primary_role, roles = normalize_roles(full.get("role"), full.get("roles"))
+    access_token = create_access_token(user["user_id"], new_email, primary_role)
+    refresh_token = create_refresh_token(user["user_id"])
+    updated = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "password_hash": 0})
+    updated["role"] = primary_role
+    updated["roles"] = roles
+    updated["avatar_url"] = normalize_avatar_url(updated.get("avatar_url"))
+    return {"user": updated, "access_token": access_token, "refresh_token": refresh_token}
+
+
+@api_router.put("/users/me/password")
+async def change_my_password(req: AccountPasswordChangeRequest, user: dict = Depends(get_current_user)):
+    """Change password. Requires current password."""
+    _validate_new_password(req.new_password)
+    full = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    if not full or not verify_password(req.current_password, full.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {
+            "password_hash": hash_password(req.new_password),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+    return {"message": "Password updated"}
 
 
 def _public_base_url(request: Request) -> str:

@@ -408,6 +408,28 @@ export async function updateProfileApi(data) {
   return res.json();
 }
 
+export async function changeMyEmailApi(email, currentPassword) {
+  const res = await authFetch(`${API_BASE}/users/me/email`, {
+    method: 'PUT',
+    body: JSON.stringify({ email, current_password: currentPassword }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail));
+  if (data.access_token) localStorage.setItem('access_token', data.access_token);
+  if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+  return data.user;
+}
+
+export async function changeMyPasswordApi(currentPassword, newPassword) {
+  const res = await authFetch(`${API_BASE}/users/me/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(data.detail));
+  return data;
+}
+
 export async function uploadAvatarApi(file) {
   const form = new FormData();
   form.append('file', file);
