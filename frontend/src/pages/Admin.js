@@ -28,6 +28,25 @@ const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sun
 const CATS = ['general','music','events','local','contests'];
 const ROLE_OPTIONS = ['listener', 'editor', 'dj', 'admin'];
 
+const Modal = ({ show, onClose, title, children }) => {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#18181b] rounded-xl p-6 w-full max-w-[500px] border border-[rgba(255,255,255,0.1)]" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-black text-[#FF007F] tracking-[2px] mb-5">{title}</h3>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const Label = ({ children }) => <label className="text-[11px] font-bold text-[#00F0FF] tracking-[2px] mb-1.5 mt-4 block">{children}</label>;
+const Input = (props) => <input {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none ${props.className||''}`} />;
+const Textarea = (props) => <textarea {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none resize-none ${props.className||''}`} />;
+const Btn = ({ children, onClick, pink, className = '' }) => (
+  <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-full py-3 px-6 text-[13px] font-extrabold tracking-[1px] transition-opacity hover:opacity-90 ${pink ? 'bg-[#FF007F] text-white' : 'bg-[#27272a] text-[#a1a1aa]'} ${className}`}>{children}</button>
+);
+
 function getUserRoles(user) {
   if (!user) return [];
   if (Array.isArray(user.roles) && user.roles.length) return user.roles;
@@ -190,26 +209,6 @@ export default function Admin() {
 
   if (authLoading || loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-[#71717a]">Loading...</div>;
   if (!user || !hasAnyRole(user, ['admin', 'dj', 'editor'])) return null;
-
-  // ===== Modal overlay helper =====
-  const Modal = ({ show, onClose, title, children }) => {
-    if (!show) return null;
-    return (
-      <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="bg-[#18181b] rounded-xl p-6 w-full max-w-[500px] border border-[rgba(255,255,255,0.1)]" onClick={e => e.stopPropagation()}>
-          <h3 className="text-xl font-black text-[#FF007F] tracking-[2px] mb-5">{title}</h3>
-          {children}
-        </div>
-      </div>
-    );
-  };
-
-  const Label = ({ children }) => <label className="text-[11px] font-bold text-[#00F0FF] tracking-[2px] mb-1.5 mt-4 block">{children}</label>;
-  const Input = (props) => <input {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none ${props.className||''}`} />;
-  const Textarea = (props) => <textarea {...props} className={`w-full bg-[#09090b] border border-[rgba(255,255,255,0.1)] rounded-lg px-4 py-3 text-sm text-white focus:border-[#FF007F] focus:outline-none resize-none ${props.className||''}`} />;
-  const Btn = ({ children, onClick, pink, className = '' }) => (
-    <button onClick={onClick} className={`flex items-center justify-center gap-2 rounded-full py-3 px-6 text-[13px] font-extrabold tracking-[1px] transition-opacity hover:opacity-90 ${pink ? 'bg-[#FF007F] text-white' : 'bg-[#27272a] text-[#a1a1aa]'} ${className}`}>{children}</button>
-  );
 
   // ===== PANELS =====
   const renderOverview = () => (

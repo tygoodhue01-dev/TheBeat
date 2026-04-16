@@ -44,7 +44,7 @@ export default function Maintenance() {
       })
       .finally(() => setLoading(false));
 
-    const ivNp = setInterval(() => getNowPlayingApi().then(setNp), 15000);
+    const ivNp = setInterval(() => getNowPlayingApi().then(setNp), 20000);
     const ivRp = setInterval(
       () => getRecentlyPlayedApi(5).then((s) => setRecent(Array.isArray(s) ? s.slice(0, 5) : [])),
       60000

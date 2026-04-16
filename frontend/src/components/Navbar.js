@@ -66,7 +66,8 @@ export default function WebNavBar() {
                       <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
                     </button>
                     {open && (
-                      <div className="absolute left-0 top-full mt-2 min-w-[190px] rounded-xl border border-[rgba(255,255,255,0.12)] bg-[#111113] p-2 shadow-xl">
+                      <div className="absolute left-0 top-full pt-1 min-w-[190px]">
+                        <div className="rounded-xl border border-[rgba(255,255,255,0.12)] bg-[#111113] p-2 shadow-xl">
                         {l.items.map((item) => {
                           const subActive = isActivePath(item.to);
                           return (
@@ -80,6 +81,7 @@ export default function WebNavBar() {
                             </Link>
                           );
                         })}
+                        </div>
                       </div>
                     )}
                   </div>

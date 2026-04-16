@@ -163,7 +163,7 @@ export default function Home() {
       setSchedule(Array.isArray(sch) ? sch : []);
       setStreamUrl(sc.stream_url || 'https://das-edge62-live365-dal03.cdnstream.com/a55796');
     });
-    const iv = setInterval(() => getNowPlayingApi().then(setNp), 15000);
+    const iv = setInterval(() => getNowPlayingApi().then(setNp), 20000);
     return () => clearInterval(iv);
   }, []);
 
