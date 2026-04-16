@@ -1,0 +1,14 @@
+{
+  "name": "The Beat 515",
+  "short_name": "Beat515",
+  "description": "Proud. Loud. Local. Your Top 40 radio station.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "categories": ["music", "entertainment"],
+  "icons": []
+}
