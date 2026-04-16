@@ -566,6 +566,31 @@ export async function updateNewsApi(newsId, data) {
   return res.json();
 }
 
+// DJ Blog manager
+export async function getMyDjPostsApi() {
+  const res = await authFetch(`${API_BASE}/dj/news`);
+  if (!res.ok) return [];
+  return res.json();
+}
+export async function createDjPostApi(data) {
+  const res = await authFetch(`${API_BASE}/dj/news`, { method: 'POST', body: JSON.stringify(data) });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function updateDjPostApi(newsId, data) {
+  const res = await authFetch(`${API_BASE}/dj/news/${newsId}`, { method: 'PUT', body: JSON.stringify(data) });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+export async function deleteDjPostApi(newsId) {
+  const res = await authFetch(`${API_BASE}/dj/news/${newsId}`, { method: 'DELETE' });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(fmtErr(r.detail));
+  return r;
+}
+
 // Roles & Permissions
 export async function getRolesApi() {
   const res = await authFetch(`${API_BASE}/admin/roles`);

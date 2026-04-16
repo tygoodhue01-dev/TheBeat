@@ -1252,6 +1252,58 @@ async def delete_news(news_id: str, user: dict = Depends(require_roles("admin", 
         raise HTTPException(status_code=404, detail="Article not found")
     return {"message": "Deleted"}
 
+# ==================== DJ BLOG ENDPOINTS ====================
+@api_router.get("/dj/news")
+async def list_my_dj_news(user: dict = Depends(require_roles("dj", "admin"))):
+    query = {} if user.get("role") == "admin" else {"author_id": user["user_id"]}
+    posts = await db.news.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return posts
+
+@api_router.post("/dj/news")
+async def create_dj_news(req: NewsCreate, user: dict = Depends(require_roles("dj", "admin"))):
+    news_doc = {
+        "news_id": f"news_{uuid.uuid4().hex[:12]}",
+        "title": req.title,
+        "content": req.content,
+        "summary": req.summary or req.content[:150],
+        "image_url": req.image_url,
+        "category": req.category or "general",
+        "author_id": user["user_id"],
+        "author_name": user["name"],
+        "published": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.news.insert_one(news_doc)
+    news_doc.pop("_id", None)
+    return news_doc
+
+@api_router.put("/dj/news/{news_id}")
+async def update_dj_news(news_id: str, req: NewsUpdate, user: dict = Depends(require_roles("dj", "admin"))):
+    existing = await db.news.find_one({"news_id": news_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Article not found")
+    if user.get("role") != "admin" and existing.get("author_id") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="You can only edit your own blog posts")
+
+    update_data = {k: v for k, v in req.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.news.update_one({"news_id": news_id}, {"$set": update_data})
+    article = await db.news.find_one({"news_id": news_id}, {"_id": 0})
+    return article
+
+@api_router.delete("/dj/news/{news_id}")
+async def delete_dj_news(news_id: str, user: dict = Depends(require_roles("dj", "admin"))):
+    existing = await db.news.find_one({"news_id": news_id}, {"_id": 0, "author_id": 1})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Article not found")
+    if user.get("role") != "admin" and existing.get("author_id") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="You can only delete your own blog posts")
+    await db.news.delete_one({"news_id": news_id})
+    return {"message": "Deleted"}
+
 # ==================== SONG REQUEST ENDPOINTS ====================
 @api_router.get("/requests")
 async def list_requests(limit: int = 50):

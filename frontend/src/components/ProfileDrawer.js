@@ -289,6 +289,13 @@ export default function ProfileDrawer({ open, onClose }) {
                 <div><p className="text-sm font-semibold text-white">Admin Panel</p><p className="text-[10px] text-[#71717a]">Manage station content</p></div>
               </Link>
             )}
+            {userRoles.includes('dj') && (
+              <Link to="/dj/blog" onClick={onClose} data-testid="profile-dj-blog"
+                className="flex items-center bg-[#18181b] rounded-lg p-3 mb-1.5 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(0,240,255,0.25)] transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-[rgba(0,240,255,0.1)] flex items-center justify-center mr-3"><Mic2 size={15} className="text-[#00F0FF]" /></div>
+                <div><p className="text-sm font-semibold text-white">DJ Blog Manager</p><p className="text-[10px] text-[#71717a]">Create and edit your posts</p></div>
+              </Link>
+            )}
 
             {[
               { to: '/requests', icon: Music, color: '#00F0FF', title: 'Request a Song', sub: 'Get your favorites on air' },
