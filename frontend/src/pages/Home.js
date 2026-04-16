@@ -523,7 +523,9 @@ export default function Home() {
                     <span className="text-[28px] font-black text-white">{d.name?.charAt(0)}</span>
                   </div>
                 )}
-                <h3 className="text-base font-bold text-white">{d.name}</h3>
+                <Link to={`/djs/${d.user_id}`} className="text-base font-bold text-white hover:text-[#FF007F] transition-colors">
+                  {d.name}
+                </Link>
                 <p className="text-[10px] font-bold text-[#00F0FF] tracking-[1px] mt-1">DJ</p>
                 <p className="text-xs text-[#a1a1aa] text-center mt-2 leading-[18px]">{d.bio}</p>
               </div>

@@ -628,6 +628,17 @@ export async function getDjsApi() {
   const data = await publicGetJson('/djs', []);
   return Array.isArray(data) ? data : [];
 }
+export async function getDjDetailApi(userId) {
+  try {
+    const res = await fetch(`${API_BASE}/djs/${encodeURIComponent(userId)}`);
+    if (!res.ok) throw new Error('Not found');
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error('Not found');
+    return await res.json();
+  } catch {
+    throw new Error('DJ not found');
+  }
+}
 
 // Newsletter
 export async function subscribeNewsletterApi(email, name = '') {
