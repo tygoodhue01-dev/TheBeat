@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { mediaUrl } from '../services/api';
-import { User, Menu, X, ChevronDown } from 'lucide-react';
+import { User, ChevronDown } from 'lucide-react';
 import ProfileDrawer from './ProfileDrawer';
 import { MAIN_NAV_LINKS } from '../config/navLinks';
 
@@ -10,7 +10,6 @@ export default function WebNavBar() {
   const { user } = useAuth();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDesktopDropdown, setOpenDesktopDropdown] = useState(null);
   const [avatarBroken, setAvatarBroken] = useState(false);
   const [avatarFallbackData, setAvatarFallbackData] = useState(false);
@@ -22,19 +21,10 @@ export default function WebNavBar() {
 
   useEffect(() => {
     setOpenDesktopDropdown(null);
-    setMobileMenuOpen(false);
   }, [location.pathname, location.search]);
 
   const links = MAIN_NAV_LINKS;
   const flatMobileLinks = links.flatMap((item) => (item.type === 'dropdown' ? item.items : [item]));
-  const mobilePrimary = [
-    { to: '/', label: 'HOME' },
-    { to: '/news', label: 'NEWS' },
-    { to: '/requests', label: 'REQUESTS' },
-    { to: '/schedule', label: 'SCHEDULE' },
-  ];
-  const mobilePrimaryPaths = new Set(mobilePrimary.map((item) => item.to));
-  const mobileMoreLinks = flatMobileLinks.filter((item) => !mobilePrimaryPaths.has(item.to));
 
   const isActivePath = (to) => {
     const pathOnly = to.split('?')[0];
@@ -108,15 +98,6 @@ export default function WebNavBar() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="md:hidden w-9 h-9 rounded-full bg-white/5 flex items-center justify-center"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              data-testid="nav-mobile-menu-toggle"
-              aria-label="Open navigation menu"
-            >
-              {mobileMenuOpen ? <X size={16} className="text-white" /> : <Menu size={16} className="text-white" />}
-            </button>
             {!user ? (
               <Link to="/login" data-testid="nav-login"
                 className="flex items-center gap-1.5 bg-[#FF007F] rounded-full px-3 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold text-white tracking-[1px] hover:opacity-90 transition-opacity">
@@ -147,59 +128,23 @@ export default function WebNavBar() {
             )}
           </div>
         </div>
-        {mobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 z-[210] bg-black/65" onClick={() => setMobileMenuOpen(false)}>
-            <div className="absolute left-0 right-0 bottom-[72px] mx-3 rounded-xl border border-[rgba(255,255,255,0.1)] bg-[#0d0d0f] px-4 py-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-extrabold tracking-[1.5px] text-[#71717a]">MORE</p>
-                <button type="button" onClick={() => setMobileMenuOpen(false)} className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center">
-                  <X size={14} className="text-white" />
-                </button>
-              </div>
-            <div className="grid grid-cols-2 gap-2">
-              {mobileMoreLinks.map(l => {
-                const active = isActivePath(l.to);
-                return (
-                  <Link
-                    key={l.to}
-                    to={l.to}
-                    onClick={() => setMobileMenuOpen(false)}
-                    data-testid={`nav-mobile-${l.label.toLowerCase().replace(/\s/g, '-')}`}
-                    className={`text-[11px] font-bold tracking-[1.2px] py-2.5 px-3 rounded-lg text-center transition-colors border ${active ? 'text-white border-[#FF007F]/45 bg-[rgba(255,0,127,0.12)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)] hover:text-white'}`}
-                  >
-                    {l.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-          </div>
-        )}
       </nav>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[200] border-t border-[rgba(255,255,255,0.1)] bg-[#0d0d0f]/95 backdrop-blur px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2">
-        <div className="grid grid-cols-5 gap-1">
-          {mobilePrimary.map((item) => {
+        <div className="flex gap-1 overflow-x-auto no-scrollbar pb-0.5">
+          {flatMobileLinks.map((item) => {
             const active = isActivePath(item.to);
             return (
               <Link
                 key={item.to}
                 to={item.to}
-                data-testid={`bottom-nav-${item.label.toLowerCase()}`}
-                className={`rounded-lg px-1 py-2 text-center text-[10px] font-extrabold tracking-[1px] transition-colors ${active ? 'text-white bg-[rgba(255,0,127,0.16)]' : 'text-[#a1a1aa]'}`}
+                data-testid={`bottom-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                className={`shrink-0 rounded-lg px-3 py-2 text-center text-[10px] font-extrabold tracking-[1px] transition-colors border ${active ? 'text-white border-[#FF007F]/45 bg-[rgba(255,0,127,0.16)]' : 'text-[#a1a1aa] border-[rgba(255,255,255,0.1)]'}`}
               >
                 {item.label}
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((v) => !v)}
-            data-testid="bottom-nav-more"
-            className={`rounded-lg px-1 py-2 text-center text-[10px] font-extrabold tracking-[1px] transition-colors ${mobileMenuOpen ? 'text-white bg-[rgba(0,240,255,0.16)]' : 'text-[#a1a1aa]'}`}
-          >
-            MORE
-          </button>
         </div>
       </div>
 

@@ -18,7 +18,6 @@ import Station from './pages/Station';
 import RecentlyPlayed from './pages/RecentlyPlayed';
 import Events from './pages/Events';
 import Maintenance from './pages/Maintenance';
-import InstallPwaPrompt from './components/InstallPwaPrompt';
 import About from './pages/About';
 import Careers from './pages/Careers';
 import Contact from './pages/Contact';
@@ -112,7 +111,6 @@ export default function App() {
       <AuthProvider>
         <MaintenanceGate>
           <AppRoutes />
-          <InstallPwaPrompt />
         </MaintenanceGate>
       </AuthProvider>
     </BrowserRouter>
